@@ -27,10 +27,29 @@ export function dataHora(iso: string): string {
   }).format(new Date(iso));
 }
 
+// O sistema opera sempre no horário local do Ceará (UTC-3, sem horário de verão),
+// independentemente do fuso do aparelho do usuário ou do servidor.
+const DESLOCAMENTO = "-03:00";
+
 export function paraCampoDataHora(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: FUSO,
+  }).formatToParts(new Date(iso));
+  const v = (t: string) => partes.find((p) => p.type === t)?.value ?? "00";
+  return `${v("year")}-${v("month")}-${v("day")}T${v("hour")}:${v("minute")}`;
+}
+
+// Converte o valor de um input datetime-local (sem fuso) em ISO no horário do Ceará.
+export function deCampoDataHora(local: string): string {
+  if (!local) return local;
+  const completo = local.length === 16 ? `${local}:00` : local;
+  return `${completo}${DESLOCAMENTO}`;
 }
 
 export function horaCurta(hora: string): string {

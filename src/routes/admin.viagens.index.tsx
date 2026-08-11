@@ -21,7 +21,7 @@ import {
   listarViagensFn,
   salvarViagemFn,
 } from "@/lib/transporte.functions";
-import { dataExtenso, dataHora, paraCampoDataHora } from "@/lib/formato";
+import { dataExtenso, dataHora, deCampoDataHora, paraCampoDataHora } from "@/lib/formato";
 import type { Viagem } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +55,15 @@ function PaginaViagens() {
   });
 
   const gravar = useMutation({
-    mutationFn: () => salvar({ data: { ...(editandoId ? { id: editandoId } : {}), ...form } }),
+    mutationFn: () =>
+      salvar({
+        data: {
+          ...(editandoId ? { id: editandoId } : {}),
+          data: form.data,
+          abertura_em: deCampoDataHora(form.abertura_em),
+          fechamento_em: deCampoDataHora(form.fechamento_em),
+        },
+      }),
     onSuccess: async () => {
       toast.success(editandoId ? "Viagem atualizada." : "Viagem criada.");
       setAberto(false);
@@ -122,7 +130,13 @@ function PaginaViagens() {
                         : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {v.aberta_agora ? "Aberta" : v.status === "cancelada" ? "Cancelada" : "Fechada"}
+                  {v.aberta_agora
+                    ? "Aberta"
+                    : v.status === "cancelada"
+                      ? "Cancelada"
+                      : v.status === "aberta" && Date.now() < new Date(v.abertura_em).getTime()
+                        ? "Agendada"
+                        : "Fechada"}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="sm" onClick={() => abrirEdicao(v)}>

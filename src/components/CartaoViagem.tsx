@@ -139,7 +139,11 @@ export function CartaoViagem({ item }: { item: ViagemComOcupacao }) {
             viagem.aberta_agora ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
           )}
         >
-          {viagem.aberta_agora ? "Aberta" : "Fechada"}
+          {viagem.aberta_agora
+            ? "Aberta"
+            : viagem.status === "aberta" && Date.now() < new Date(viagem.abertura_em).getTime()
+              ? "Agendada"
+              : "Fechada"}
         </span>
       </header>
 
