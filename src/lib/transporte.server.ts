@@ -227,23 +227,71 @@ export function sairAdmin() {
   encerrarSessaoAdmin();
 }
 
-export async function listarAlunos(busca: string): Promise<Aluno[]> {
+export async function listarAlunos(
+  busca: string,
+  status: "todos" | "ativos" | "inativos" = "todos",
+): Promise<Aluno[]> {
   await exigirAdmin();
   let q = supabaseAdmin
     .from("alunos")
     .select("id, nome, cpf, matricula, curso, instituicao, ativo")
     .order("nome");
+  if (status === "ativos") q = q.eq("ativo", true);
+  if (status === "inativos") q = q.eq("ativo", false);
   const termo = busca.trim();
   if (termo) {
     const digitos = normalizarCpf(termo);
     q = digitos.length >= 3
-      ? q.or(`nome.ilike.%${termo}%,cpf.ilike.%${digitos}%,matricula.ilike.%${termo}%`)
-      : q.or(`nome.ilike.%${termo}%,matricula.ilike.%${termo}%`);
+      ? q.or(`nome.ilike.%${termo}%,cpf.ilike.%${digitos}%,matricula.ilike.%${termo}%,curso.ilike.%${termo}%,instituicao.ilike.%${termo}%`)
+      : q.or(`nome.ilike.%${termo}%,matricula.ilike.%${termo}%,curso.ilike.%${termo}%,instituicao.ilike.%${termo}%`);
   }
   const { data, error } = await q.limit(300);
   if (error) throw erroAmigavel(error);
   return (data ?? []) as Aluno[];
 }
+
+export interface HistoricoAluno {
+  viagem_data: string;
+  tipo: TipoViagem;
+  poltrona_ida: number | null;
+  poltrona_volta: number | null;
+}
+
+export async function detalhesAluno(
+  id: string,
+): Promise<{ aluno: Aluno; historico: HistoricoAluno[] }> {
+  await exigirAdmin();
+  const { data: aluno, error } = await supabaseAdmin
+    .from("alunos")
+    .select("id, nome, cpf, matricula, curso, instituicao, ativo")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw erroAmigavel(error);
+  if (!aluno) throw new Error("Aluno não encontrado.");
+
+  const { data: sols, error: erroSols } = await supabaseAdmin
+    .from("solicitacoes")
+    .select("id, tipo, viagens(data), assentos(trecho, numero)")
+    .eq("aluno_id", id)
+    .limit(50);
+  if (erroSols) throw erroAmigavel(erroSols);
+
+  const historico: HistoricoAluno[] = (sols ?? [])
+    .map((s) => {
+      const assentos = (s.assentos ?? []) as unknown as { trecho: string; numero: number }[];
+      const viagem = s.viagens as unknown as { data: string } | null;
+      return {
+        viagem_data: viagem?.data ?? "",
+        tipo: s.tipo as TipoViagem,
+        poltrona_ida: assentos.find((a) => a.trecho === "ida")?.numero ?? null,
+        poltrona_volta: assentos.find((a) => a.trecho === "volta")?.numero ?? null,
+      };
+    })
+    .sort((a, b) => b.viagem_data.localeCompare(a.viagem_data));
+
+  return { aluno: aluno as Aluno, historico };
+}
+
 
 export interface EntradaAluno {
   id?: string | undefined;
