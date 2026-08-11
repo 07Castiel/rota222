@@ -31,6 +31,11 @@ export const esquemaAluno = z.object({
 
 export const esquemaBusca = z.object({
   busca: z.string().max(80).default(""),
+  status: z.enum(["todos", "ativos", "inativos"]).default("todos"),
+});
+
+export const esquemaAlunoId = z.object({
+  id: z.string().uuid(),
 });
 
 export const esquemaAtivo = z.object({
