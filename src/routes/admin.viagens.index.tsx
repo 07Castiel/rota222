@@ -21,7 +21,7 @@ import {
   listarViagensFn,
   salvarViagemFn,
 } from "@/lib/transporte.functions";
-import { dataExtenso, dataHora, paraCampoDataHora } from "@/lib/formato";
+import { dataExtenso, dataHora, deCampoDataHora, paraCampoDataHora } from "@/lib/formato";
 import type { Viagem } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
