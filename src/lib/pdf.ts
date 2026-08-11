@@ -23,7 +23,7 @@ export async function exportarPdfViagem(painel: PainelViagem) {
     doc.text(
       `${trecho.onibus.nome}${trecho.onibus.rota ? ` (${trecho.onibus.rota})` : ""} · ${
         trecho.trecho === "ida" ? "Ida" : "Volta"
-      } ${trecho.origem} → ${trecho.destino} · ${trecho.horario}`,
+      } ${trecho.origem} para ${trecho.destino} · ${trecho.horario}`,
       40,
       82,
     );
