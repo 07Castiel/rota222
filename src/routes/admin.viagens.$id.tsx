@@ -72,8 +72,8 @@ function PaginaLista() {
         <div className="space-y-5">
           <h2 className="text-lg font-semibold first-letter:uppercase">{dataExtenso(data.viagem.data)}</h2>
 
-          {data.trechos.map((t) => (
-            <section key={`${t.onibus.id}-${t.trecho}`} className="superficie overflow-hidden">
+          {data.listas.map((t) => (
+            <section key={t.onibus.id} className="superficie overflow-hidden">
               <header className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-3">
                 <div>
                   <p className="font-semibold">
@@ -81,36 +81,43 @@ function PaginaLista() {
                     {t.onibus.rota ? ` · ${t.onibus.rota}` : ""}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t.trecho === "ida" ? "Ida" : "Volta"} · {t.origem} &rarr; {t.destino} · {t.horario}
+                    Ida {t.hora_ida} (Pacujá &rarr; Sobral) · Volta {t.hora_volta} (Sobral &rarr; Pacujá)
                   </p>
                 </div>
                 <p className="text-sm font-semibold tabular-nums">
-                  {t.passageiros.length} / {t.onibus.capacidade}
+                  Ida {t.onibus.ocupados_ida}/{t.onibus.capacidade} · Volta {t.onibus.ocupados_volta}/
+                  {t.onibus.capacidade}
                 </p>
               </header>
 
-              {t.passageiros.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-muted-foreground">Nenhum passageiro neste trecho.</p>
+              {t.linhas.length === 0 ? (
+                <p className="px-4 py-6 text-sm text-muted-foreground">Nenhum passageiro neste ônibus.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
-                        <th className="px-4 py-2">Poltrona</th>
+                        <th className="px-4 py-2">Nº</th>
                         <th className="px-4 py-2">Nome</th>
                         <th className="px-4 py-2">Matrícula</th>
                         <th className="px-4 py-2">Curso</th>
-                        <th className="px-4 py-2">Tipo</th>
+                        <th className="px-4 py-2 text-center">IDA</th>
+                        <th className="px-4 py-2 text-center">VOLTA</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {t.passageiros.map((p) => (
-                        <tr key={p.poltrona}>
-                          <td className="px-4 py-2 font-semibold tabular-nums">{p.poltrona}</td>
-                          <td className="px-4 py-2">{p.nome}</td>
-                          <td className="px-4 py-2">{p.matricula}</td>
-                          <td className="px-4 py-2">{p.curso}</td>
-                          <td className="px-4 py-2 text-muted-foreground">{ROTULO_TIPO[p.tipo]}</td>
+                      {t.linhas.map((l, i) => (
+                        <tr key={l.solicitacao_id}>
+                          <td className="px-4 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
+                          <td className="px-4 py-2">{l.nome}</td>
+                          <td className="px-4 py-2">{l.matricula}</td>
+                          <td className="px-4 py-2">{l.curso}</td>
+                          <td className="px-4 py-2 text-center font-semibold tabular-nums">
+                            {l.poltrona_ida === null ? "-" : String(l.poltrona_ida).padStart(2, "0")}
+                          </td>
+                          <td className="px-4 py-2 text-center font-semibold tabular-nums">
+                            {l.poltrona_volta === null ? "-" : String(l.poltrona_volta).padStart(2, "0")}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -119,6 +126,7 @@ function PaginaLista() {
               )}
             </section>
           ))}
+
         </div>
       ) : null}
     </AdminShell>
