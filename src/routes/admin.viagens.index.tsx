@@ -55,7 +55,15 @@ function PaginaViagens() {
   });
 
   const gravar = useMutation({
-    mutationFn: () => salvar({ data: { ...(editandoId ? { id: editandoId } : {}), ...form } }),
+    mutationFn: () =>
+      salvar({
+        data: {
+          ...(editandoId ? { id: editandoId } : {}),
+          data: form.data,
+          abertura_em: deCampoDataHora(form.abertura_em),
+          fechamento_em: deCampoDataHora(form.fechamento_em),
+        },
+      }),
     onSuccess: async () => {
       toast.success(editandoId ? "Viagem atualizada." : "Viagem criada.");
       setAberto(false);
