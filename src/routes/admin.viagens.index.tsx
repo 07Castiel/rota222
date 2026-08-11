@@ -130,7 +130,13 @@ function PaginaViagens() {
                         : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {v.aberta_agora ? "Aberta" : v.status === "cancelada" ? "Cancelada" : "Fechada"}
+                  {v.aberta_agora
+                    ? "Aberta"
+                    : v.status === "cancelada"
+                      ? "Cancelada"
+                      : v.status === "aberta" && Date.now() < new Date(v.abertura_em).getTime()
+                        ? "Agendada"
+                        : "Fechada"}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="sm" onClick={() => abrirEdicao(v)}>
