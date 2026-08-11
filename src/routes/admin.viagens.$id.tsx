@@ -9,7 +9,6 @@ import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/button";
 import { painelViagemFn } from "@/lib/transporte.functions";
 import { dataExtenso } from "@/lib/formato";
-import { ROTULO_TIPO } from "@/lib/tipos";
 
 export const Route = createFileRoute("/admin/viagens/$id")({
   head: () => ({
