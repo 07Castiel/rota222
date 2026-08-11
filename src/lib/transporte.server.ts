@@ -2,15 +2,16 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { cpfValido, normalizarCpf } from "./cpf";
 import type {
   Aluno,
+  LinhaPassageiro,
   Onibus,
   OnibusOcupacao,
-  PainelTrecho,
+  PainelOnibus,
   PainelViagem,
-  Passageiro,
   SolicitacaoDetalhe,
   TipoViagem,
   Viagem,
 } from "./tipos";
+
 import {
   encerrarSessaoAdmin,
   encerrarSessaoAluno,
