@@ -342,41 +342,53 @@ export async function painelViagem(viagemId: string): Promise<PainelViagem> {
 
   const { data: assentos, error: erroAssentos } = await supabaseAdmin
     .from("assentos")
-    .select("numero, trecho, onibus_id, solicitacoes(tipo, alunos(nome, matricula, curso))")
+    .select(
+      "numero, trecho, onibus_id, solicitacao_id, solicitacoes(tipo, alunos(nome, matricula, curso))",
+    )
     .eq("viagem_id", viagemId)
     .order("numero");
   if (erroAssentos) throw erroAmigavel(erroAssentos);
 
-  const trechos: PainelTrecho[] = [];
-  for (const o of onibus) {
-    for (const trecho of ["ida", "volta"] as const) {
-      const passageiros: Passageiro[] = (assentos ?? [])
-        .filter((a) => a.onibus_id === o.id && a.trecho === trecho)
-        .map((a) => {
-          const s = a.solicitacoes as unknown as {
-            tipo: TipoViagem;
-            alunos: { nome: string; matricula: string; curso: string };
-          };
-          return {
-            poltrona: a.numero,
-            nome: s?.alunos?.nome ?? "—",
-            matricula: s?.alunos?.matricula ?? "—",
-            curso: s?.alunos?.curso ?? "—",
-            tipo: s?.tipo ?? "ida",
-          };
-        })
-        .sort((a, b) => a.poltrona - b.poltrona);
+  const listas: PainelOnibus[] = onibus.map((o) => {
+    const porSolicitacao = new Map<string, LinhaPassageiro>();
 
-      trechos.push({
-        onibus: o,
-        trecho,
-        horario: (trecho === "ida" ? o.hora_ida : o.hora_volta).slice(0, 5),
-        origem: trecho === "ida" ? "Pacujá" : "Sobral",
-        destino: trecho === "ida" ? "Sobral" : "Pacujá",
-        passageiros,
-      });
+    for (const a of assentos ?? []) {
+      if (a.onibus_id !== o.id) continue;
+      const s = a.solicitacoes as unknown as {
+        tipo: TipoViagem;
+        alunos: { nome: string; matricula: string; curso: string };
+      };
+      let linha = porSolicitacao.get(a.solicitacao_id);
+      if (!linha) {
+        linha = {
+          solicitacao_id: a.solicitacao_id,
+          nome: s?.alunos?.nome ?? "—",
+          matricula: s?.alunos?.matricula ?? "—",
+          curso: s?.alunos?.curso ?? "—",
+          tipo: s?.tipo ?? "ida",
+          poltrona_ida: null,
+          poltrona_volta: null,
+        };
+        porSolicitacao.set(a.solicitacao_id, linha);
+      }
+      if (a.trecho === "ida") linha.poltrona_ida = a.numero;
+      else linha.poltrona_volta = a.numero;
     }
-  }
 
-  return { viagem: viagemComEstado(v), onibus, trechos };
+    const linhas = [...porSolicitacao.values()].sort((x, y) => {
+      const cx = x.poltrona_ida ?? x.poltrona_volta ?? 0;
+      const cy = y.poltrona_ida ?? y.poltrona_volta ?? 0;
+      return cx - cy || x.nome.localeCompare(y.nome, "pt-BR");
+    });
+
+    return {
+      onibus: o,
+      hora_ida: o.hora_ida.slice(0, 5),
+      hora_volta: o.hora_volta.slice(0, 5),
+      linhas,
+    };
+  });
+
+  return { viagem: viagemComEstado(v), onibus, listas };
 }
+
