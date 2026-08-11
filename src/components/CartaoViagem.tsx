@@ -121,7 +121,7 @@ export function CartaoViagem({ item }: { item: ViagemComOcupacao }) {
     <article className="superficie overflow-hidden">
       <header className="flex flex-wrap items-start justify-between gap-2 border-b bg-muted/40 px-5 py-4">
         <div>
-          <h3 className="text-base font-semibold capitalize">{dataExtenso(viagem.data)}</h3>
+          <h3 className="text-base font-semibold first-letter:uppercase">{dataExtenso(viagem.data)}</h3>
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             {viagem.aberta_agora

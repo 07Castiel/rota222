@@ -107,7 +107,7 @@ function PaginaViagens() {
               <li key={v.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <CalendarDays className="h-5 w-5 text-primary" />
                 <div className="min-w-52 flex-1">
-                  <p className="font-medium capitalize">{dataExtenso(v.data)}</p>
+                  <p className="font-medium first-letter:uppercase">{dataExtenso(v.data)}</p>
                   <p className="text-xs text-muted-foreground">
                     Janela: {dataHora(v.abertura_em)} até {dataHora(v.fechamento_em)}
                   </p>

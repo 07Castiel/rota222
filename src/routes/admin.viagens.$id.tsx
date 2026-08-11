@@ -70,7 +70,7 @@ function PaginaLista() {
 
       {data ? (
         <div className="space-y-5">
-          <h2 className="text-lg font-semibold capitalize">{dataExtenso(data.viagem.data)}</h2>
+          <h2 className="text-lg font-semibold first-letter:uppercase">{dataExtenso(data.viagem.data)}</h2>
 
           {data.trechos.map((t) => (
             <section key={`${t.onibus.id}-${t.trecho}`} className="superficie overflow-hidden">
