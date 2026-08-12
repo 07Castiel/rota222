@@ -15,6 +15,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAlunosRouteImport } from './routes/admin.alunos'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AlunoIndexRouteImport } from './routes/aluno.index'
+import { Route as AlunoSolicitarRouteImport } from './routes/aluno.solicitar'
 import { Route as AdminViagensIndexRouteImport } from './routes/admin.viagens.index'
 import { Route as AdminViagensIdRouteImport } from './routes/admin.viagens.$id'
 
@@ -48,6 +49,11 @@ const AlunoIndexRoute = AlunoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AlunoRoute,
 } as any)
+const AlunoSolicitarRoute = AlunoSolicitarRouteImport.update({
+  id: '/solicitar',
+  path: '/solicitar',
+  getParentRoute: () => AlunoRoute,
+} as any)
 const AdminViagensIndexRoute = AdminViagensIndexRouteImport.update({
   id: '/admin/viagens/',
   path: '/admin/viagens/',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/aluno': typeof AlunoRouteWithChildren
   '/admin/alunos': typeof AdminAlunosRoute
   '/admin/login': typeof AdminLoginRoute
+  '/aluno/solicitar': typeof AlunoSolicitarRoute
   '/admin/': typeof AdminIndexRoute
   '/aluno/': typeof AlunoIndexRoute
   '/admin/viagens/$id': typeof AdminViagensIdRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/alunos': typeof AdminAlunosRoute
   '/admin/login': typeof AdminLoginRoute
+  '/aluno/solicitar': typeof AlunoSolicitarRoute
   '/admin': typeof AdminIndexRoute
   '/aluno': typeof AlunoIndexRoute
   '/admin/viagens/$id': typeof AdminViagensIdRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/aluno': typeof AlunoRouteWithChildren
   '/admin/alunos': typeof AdminAlunosRoute
   '/admin/login': typeof AdminLoginRoute
+  '/aluno/solicitar': typeof AlunoSolicitarRoute
   '/admin/': typeof AdminIndexRoute
   '/aluno/': typeof AlunoIndexRoute
   '/admin/viagens/$id': typeof AdminViagensIdRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/aluno'
     | '/admin/alunos'
     | '/admin/login'
+    | '/aluno/solicitar'
     | '/admin/'
     | '/aluno/'
     | '/admin/viagens/$id'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/alunos'
     | '/admin/login'
+    | '/aluno/solicitar'
     | '/admin'
     | '/aluno'
     | '/admin/viagens/$id'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/aluno'
     | '/admin/alunos'
     | '/admin/login'
+    | '/aluno/solicitar'
     | '/admin/'
     | '/aluno/'
     | '/admin/viagens/$id'
@@ -175,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlunoIndexRouteImport
       parentRoute: typeof AlunoRoute
     }
+    '/aluno/solicitar': {
+      id: '/aluno/solicitar'
+      path: '/solicitar'
+      fullPath: '/aluno/solicitar'
+      preLoaderRoute: typeof AlunoSolicitarRouteImport
+      parentRoute: typeof AlunoRoute
+    }
     '/admin/viagens/': {
       id: '/admin/viagens/'
       path: '/admin/viagens'
@@ -193,10 +212,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AlunoRouteChildren {
+  AlunoSolicitarRoute: typeof AlunoSolicitarRoute
   AlunoIndexRoute: typeof AlunoIndexRoute
 }
 
 const AlunoRouteChildren: AlunoRouteChildren = {
+  AlunoSolicitarRoute: AlunoSolicitarRoute,
   AlunoIndexRoute: AlunoIndexRoute,
 }
 
