@@ -254,16 +254,103 @@ export async function listarAlunos(
   return (data ?? []) as Aluno[];
 }
 
-export interface HistoricoAluno {
-  viagem_data: string;
-  tipo: TipoViagem;
-  poltrona_ida: number | null;
-  poltrona_volta: number | null;
+const SELECT_HISTORICO =
+  "id, tipo, status, created_at, poltrona_ida, poltrona_volta, " +
+  "viagens(data, status), " +
+  "ida:onibus!solicitacoes_onibus_ida_id_fkey(nome, rota, hora_ida), " +
+  "volta:onibus!solicitacoes_onibus_volta_id_fkey(nome, rota, hora_volta)";
+
+type LinhaOnibus = { nome: string; rota: string | null; hora_ida?: string; hora_volta?: string };
+
+function hojeCeara(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Fortaleza" }).format(new Date());
+}
+
+function montarHistorico(linhas: Record<string, unknown>[]): ItemHistorico[] {
+  const hoje = hojeCeara();
+  return linhas
+    .map((s) => {
+      const viagem = s["viagens"] as { data: string; status: string } | null;
+      const ida = s["ida"] as LinhaOnibus | null;
+      const volta = s["volta"] as LinhaOnibus | null;
+      const bruto = s["status"] as StatusSolicitacao;
+      let status: StatusSolicitacao = bruto;
+      if (bruto === "confirmada") {
+        if (viagem?.status === "cancelada") status = "viagem_cancelada";
+        else if ((viagem?.data ?? "") < hoje) status = "encerrada";
+      }
+      return {
+        id: s["id"] as string,
+        data: viagem?.data ?? "",
+        tipo: s["tipo"] as TipoViagem,
+        onibus_ida: ida?.nome ?? null,
+        onibus_volta: volta?.nome ?? null,
+        rota_ida: ida?.rota ?? null,
+        rota_volta: volta?.rota ?? null,
+        saida_pacuja: ida?.hora_ida ? ida.hora_ida.slice(0, 5) : null,
+        saida_sobral: volta?.hora_volta ? volta.hora_volta.slice(0, 5) : null,
+        poltrona_ida: (s["poltrona_ida"] as number | null) ?? null,
+        poltrona_volta: (s["poltrona_volta"] as number | null) ?? null,
+        criado_em: s["created_at"] as string,
+        status,
+      };
+    })
+    .sort((a, b) => b.data.localeCompare(a.data) || b.criado_em.localeCompare(a.criado_em));
+}
+
+async function historicoDoAluno(alunoId: string): Promise<ItemHistorico[]> {
+  const { data, error } = await supabaseAdmin
+    .from("solicitacoes")
+    .select(SELECT_HISTORICO)
+    .eq("aluno_id", alunoId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw erroAmigavel(error);
+  return montarHistorico((data ?? []) as unknown as Record<string, unknown>[]);
+}
+
+/** Área inicial do aluno: cadastro, próxima data, solicitação atual e histórico. */
+export async function inicioAluno(): Promise<InicioAluno> {
+  const alunoId = await exigirAluno();
+  const aluno = await alunoAtual();
+  if (!aluno) throw erroAmigavel(new Error("SESSAO_EXPIRADA"));
+
+  const { data: viagens, error } = await supabaseAdmin
+    .from("viagens")
+    .select("id, data, abertura_em, fechamento_em, status")
+    .neq("status", "cancelada")
+    .gte("data", hojeCeara())
+    .order("data")
+    .limit(1);
+  if (error) throw erroAmigavel(error);
+
+  const historico = await historicoDoAluno(alunoId);
+
+  let proxima: InicioAluno["proxima"] = null;
+  let solicitacao: ItemHistorico | null = null;
+
+  const bruta = viagens?.[0];
+  if (bruta) {
+    const viagem = viagemComEstado(bruta);
+    const agora = Date.now();
+    const janela: "aberta" | "aguardando" | "encerrada" = viagem.aberta_agora
+      ? "aberta"
+      : viagem.status === "aberta" && agora < new Date(viagem.abertura_em).getTime()
+        ? "aguardando"
+        : "encerrada";
+    const onibus = await listarOnibus();
+    const primeiro = onibus[0];
+    proxima = { viagem, janela, saida_pacuja: primeiro ? primeiro.hora_ida.slice(0, 5) : null };
+    solicitacao =
+      historico.find((h) => h.data === viagem.data && h.status === "confirmada") ?? null;
+  }
+
+  return { aluno, proxima, solicitacao, historico };
 }
 
 export async function detalhesAluno(
   id: string,
-): Promise<{ aluno: Aluno; historico: HistoricoAluno[] }> {
+): Promise<{ aluno: Aluno; historico: ItemHistorico[] }> {
   await exigirAdmin();
   const { data: aluno, error } = await supabaseAdmin
     .from("alunos")
@@ -273,29 +360,8 @@ export async function detalhesAluno(
   if (error) throw erroAmigavel(error);
   if (!aluno) throw new Error("Aluno não encontrado.");
 
-  const { data: sols, error: erroSols } = await supabaseAdmin
-    .from("solicitacoes")
-    .select("id, tipo, viagens(data), assentos(trecho, numero)")
-    .eq("aluno_id", id)
-    .limit(50);
-  if (erroSols) throw erroAmigavel(erroSols);
-
-  const historico: HistoricoAluno[] = (sols ?? [])
-    .map((s) => {
-      const assentos = (s.assentos ?? []) as unknown as { trecho: string; numero: number }[];
-      const viagem = s.viagens as unknown as { data: string } | null;
-      return {
-        viagem_data: viagem?.data ?? "",
-        tipo: s.tipo as TipoViagem,
-        poltrona_ida: assentos.find((a) => a.trecho === "ida")?.numero ?? null,
-        poltrona_volta: assentos.find((a) => a.trecho === "volta")?.numero ?? null,
-      };
-    })
-    .sort((a, b) => b.viagem_data.localeCompare(a.viagem_data));
-
-  return { aluno: aluno as Aluno, historico };
+  return { aluno: aluno as Aluno, historico: await historicoDoAluno(id) };
 }
-
 
 export interface EntradaAluno {
   id?: string | undefined;
@@ -305,6 +371,18 @@ export interface EntradaAluno {
   curso: string;
   instituicao: string;
   ativo: boolean;
+  nascimento?: string | null | undefined;
+  rg?: string | null | undefined;
+  endereco?: string | null | undefined;
+  telefone?: string | null | undefined;
+  email?: string | null | undefined;
+  dias_semana?: string[] | undefined;
+  inicio_aulas?: string | null | undefined;
+}
+
+function texto(v: string | null | undefined): string | null {
+  const t = (v ?? "").trim();
+  return t.length > 0 ? t : null;
 }
 
 export async function salvarAluno(entrada: EntradaAluno): Promise<Aluno> {
@@ -318,6 +396,13 @@ export async function salvarAluno(entrada: EntradaAluno): Promise<Aluno> {
     curso: entrada.curso.trim(),
     instituicao: entrada.instituicao.trim(),
     ativo: entrada.ativo,
+    nascimento: texto(entrada.nascimento),
+    rg: texto(entrada.rg),
+    endereco: texto(entrada.endereco),
+    telefone: texto(entrada.telefone),
+    email: texto(entrada.email),
+    dias_semana: entrada.dias_semana ?? [],
+    inicio_aulas: texto(entrada.inicio_aulas),
   };
   const query = entrada.id
     ? supabaseAdmin.from("alunos").update(registro).eq("id", entrada.id)
@@ -331,6 +416,7 @@ export async function salvarAluno(entrada: EntradaAluno): Promise<Aluno> {
   }
   return data as Aluno;
 }
+
 
 export async function alternarAtivo(id: string, ativo: boolean): Promise<void> {
   await exigirAdmin();
