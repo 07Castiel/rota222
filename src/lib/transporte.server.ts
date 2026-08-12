@@ -2,6 +2,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { cpfValido, normalizarCpf } from "./cpf";
 import type {
   Aluno,
+  InicioAluno,
+  ItemHistorico,
+  StatusSolicitacao,
   LinhaPassageiro,
   Onibus,
   OnibusOcupacao,
