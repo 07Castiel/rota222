@@ -27,6 +27,13 @@ export const esquemaAluno = z.object({
   curso: z.string().trim().min(2, "Informe o curso").max(80),
   instituicao: z.string().trim().min(2, "Informe a instituição").max(80),
   ativo: z.boolean(),
+  nascimento: z.string().max(10).nullish(),
+  rg: z.string().trim().max(30).nullish(),
+  endereco: z.string().trim().max(160).nullish(),
+  telefone: z.string().trim().max(30).nullish(),
+  email: z.string().trim().max(120).nullish(),
+  dias_semana: z.array(z.string().max(20)).max(7).default([]),
+  inicio_aulas: z.string().max(10).nullish(),
 });
 
 export const esquemaBusca = z.object({

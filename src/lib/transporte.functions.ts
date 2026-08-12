@@ -30,6 +30,11 @@ export const painelDoAlunoFn = createServerFn({ method: "GET" }).handler(async (
   return painelDoAluno();
 });
 
+export const inicioAlunoFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { inicioAluno } = await import("./transporte.server");
+  return inicioAluno();
+});
+
 export const reservarFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => esquemaReserva.parse(d))
   .handler(async ({ data }) => {
