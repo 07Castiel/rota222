@@ -78,7 +78,10 @@ export function CartaoViagem({ item }: { item: ViagemComOcupacao }) {
   const [idaId, setIdaId] = useState<string | null>(solicitacao?.onibus_ida?.id ?? null);
   const [voltaId, setVoltaId] = useState<string | null>(solicitacao?.onibus_volta?.id ?? null);
 
-  const atualizar = () => queryClient.invalidateQueries({ queryKey: ["painel-aluno"] });
+  const atualizar = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["painel-aluno"] });
+    await queryClient.invalidateQueries({ queryKey: ["inicio-aluno"] });
+  };
 
   const salvar = useMutation({
     mutationFn: () =>

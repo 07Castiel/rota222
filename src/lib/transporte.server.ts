@@ -28,8 +28,10 @@ const CAMPOS_ALUNO =
   "id, nome, cpf, matricula, curso, instituicao, ativo, nascimento, rg, endereco, telefone, email, dias_semana, inicio_aulas";
 
 const MENSAGENS: Record<string, string> = {
-  ALUNO_NAO_CADASTRADO: "CPF não cadastrado. Procure a administração.",
-  ALUNO_INATIVO: "Seu cadastro está inativo. Procure a administração.",
+  ALUNO_NAO_CADASTRADO:
+    "CPF não encontrado. Entre em contato com a responsável pelo transporte.",
+  ALUNO_INATIVO:
+    "Seu cadastro está inativo. Entre em contato com a responsável pelo transporte.",
   CPF_INVALIDO: "CPF inválido.",
   JANELA_FECHADA: "As solicitações desta data não estão abertas.",
   ONIBUS_LOTADO: "Este ônibus já está lotado neste trecho.",
