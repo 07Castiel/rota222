@@ -21,6 +21,9 @@ import {
   iniciarSessaoAluno,
 } from "./session.server";
 
+const CAMPOS_ALUNO =
+  "id, nome, cpf, matricula, curso, instituicao, ativo, nascimento, rg, endereco, telefone, email, dias_semana, inicio_aulas";
+
 const MENSAGENS: Record<string, string> = {
   ALUNO_NAO_CADASTRADO: "CPF não cadastrado. Procure a administração.",
   ALUNO_INATIVO: "Seu cadastro está inativo. Procure a administração.",
@@ -71,7 +74,7 @@ export async function entrarComCpf(cpfBruto: string): Promise<Aluno> {
 
   const { data, error } = await supabaseAdmin
     .from("alunos")
-    .select("id, nome, cpf, matricula, curso, instituicao, ativo")
+    .select(CAMPOS_ALUNO)
     .eq("cpf", cpf)
     .maybeSingle();
   if (error) throw erroAmigavel(error);
@@ -88,7 +91,7 @@ export async function alunoAtual(): Promise<Aluno | null> {
   if (!id) return null;
   const { data } = await supabaseAdmin
     .from("alunos")
-    .select("id, nome, cpf, matricula, curso, instituicao, ativo")
+    .select(CAMPOS_ALUNO)
     .eq("id", id)
     .maybeSingle();
   if (!data || !data.ativo) return null;
@@ -162,6 +165,7 @@ async function buscarSolicitacao(alunoId: string, viagemId: string): Promise<Sol
     .select("id, viagem_id, tipo, onibus_ida_id, onibus_volta_id")
     .eq("aluno_id", alunoId)
     .eq("viagem_id", viagemId)
+    .eq("status", "confirmada")
     .maybeSingle();
   if (error) throw erroAmigavel(error);
   if (!data) return null;
@@ -234,7 +238,7 @@ export async function listarAlunos(
   await exigirAdmin();
   let q = supabaseAdmin
     .from("alunos")
-    .select("id, nome, cpf, matricula, curso, instituicao, ativo")
+    .select(CAMPOS_ALUNO)
     .order("nome");
   if (status === "ativos") q = q.eq("ativo", true);
   if (status === "inativos") q = q.eq("ativo", false);
@@ -263,7 +267,7 @@ export async function detalhesAluno(
   await exigirAdmin();
   const { data: aluno, error } = await supabaseAdmin
     .from("alunos")
-    .select("id, nome, cpf, matricula, curso, instituicao, ativo")
+    .select(CAMPOS_ALUNO)
     .eq("id", id)
     .maybeSingle();
   if (error) throw erroAmigavel(error);
@@ -319,7 +323,7 @@ export async function salvarAluno(entrada: EntradaAluno): Promise<Aluno> {
     ? supabaseAdmin.from("alunos").update(registro).eq("id", entrada.id)
     : supabaseAdmin.from("alunos").insert(registro);
   const { data, error } = await query
-    .select("id, nome, cpf, matricula, curso, instituicao, ativo")
+    .select(CAMPOS_ALUNO)
     .single();
   if (error) {
     if (error.code === "23505") throw new Error("Já existe um aluno com este CPF.");
