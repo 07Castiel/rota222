@@ -62,48 +62,47 @@
 }
 
 :root {
-  --radius: 0.9rem;
-  --background: oklch(0.985 0.008 95);
-  --foreground: oklch(0.24 0.03 160);
+  --radius: 0.75rem;
+  --background: oklch(0.972 0.006 250);
+  --foreground: oklch(0.24 0.02 255);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.03 160);
+  --card-foreground: oklch(0.24 0.02 255);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.03 160);
-  --primary: oklch(0.42 0.09 168);
-  --primary-foreground: oklch(0.985 0.01 95);
-  --secondary: oklch(0.95 0.02 120);
-  --secondary-foreground: oklch(0.32 0.05 165);
-  --muted: oklch(0.955 0.012 100);
-  --muted-foreground: oklch(0.52 0.025 160);
-  --accent: oklch(0.78 0.15 72);
-  --accent-foreground: oklch(0.26 0.05 60);
-  --destructive: oklch(0.55 0.19 27);
-  --destructive-foreground: oklch(0.985 0.01 95);
-  --success: oklch(0.58 0.13 155);
-  --success-foreground: oklch(0.985 0.01 95);
-  --warning: oklch(0.75 0.15 70);
-  --warning-foreground: oklch(0.26 0.05 60);
-  --border: oklch(0.9 0.015 110);
-  --input: oklch(0.9 0.015 110);
-  --ring: oklch(0.42 0.09 168);
-  --chart-1: oklch(0.42 0.09 168);
-  --chart-2: oklch(0.78 0.15 72);
-  --chart-3: oklch(0.58 0.13 155);
-  --chart-4: oklch(0.55 0.19 27);
-  --chart-5: oklch(0.52 0.025 160);
-  --sidebar: oklch(0.98 0.012 100);
-  --sidebar-foreground: oklch(0.24 0.03 160);
-  --sidebar-primary: oklch(0.42 0.09 168);
-  --sidebar-primary-foreground: oklch(0.985 0.01 95);
-  --sidebar-accent: oklch(0.95 0.02 120);
-  --sidebar-accent-foreground: oklch(0.32 0.05 165);
-  --sidebar-border: oklch(0.9 0.015 110);
-  --sidebar-ring: oklch(0.42 0.09 168);
+  --popover-foreground: oklch(0.24 0.02 255);
+  --primary: oklch(0.42 0.11 250);
+  --primary-foreground: oklch(0.99 0.003 250);
+  --secondary: oklch(0.945 0.012 250);
+  --secondary-foreground: oklch(0.32 0.05 252);
+  --muted: oklch(0.955 0.008 250);
+  --muted-foreground: oklch(0.47 0.02 253);
+  --accent: oklch(0.93 0.02 250);
+  --accent-foreground: oklch(0.32 0.06 252);
+  --destructive: oklch(0.52 0.19 27);
+  --destructive-foreground: oklch(0.99 0.003 250);
+  --success: oklch(0.52 0.13 152);
+  --success-foreground: oklch(0.99 0.003 250);
+  --warning: oklch(0.68 0.14 72);
+  --warning-foreground: oklch(0.24 0.04 60);
+  --border: oklch(0.9 0.01 250);
+  --input: oklch(0.89 0.012 250);
+  --ring: oklch(0.42 0.11 250);
+  --chart-1: oklch(0.42 0.11 250);
+  --chart-2: oklch(0.52 0.13 152);
+  --chart-3: oklch(0.68 0.14 72);
+  --chart-4: oklch(0.52 0.19 27);
+  --chart-5: oklch(0.47 0.02 253);
+  --sidebar: oklch(0.985 0.005 250);
+  --sidebar-foreground: oklch(0.24 0.02 255);
+  --sidebar-primary: oklch(0.42 0.11 250);
+  --sidebar-primary-foreground: oklch(0.99 0.003 250);
+  --sidebar-accent: oklch(0.945 0.012 250);
+  --sidebar-accent-foreground: oklch(0.32 0.05 252);
+  --sidebar-border: oklch(0.9 0.01 250);
+  --sidebar-ring: oklch(0.42 0.11 250);
 
-  --gradiente-marca: linear-gradient(140deg, oklch(0.42 0.09 168), oklch(0.32 0.07 175));
-  --sombra-cartao: 0 1px 2px oklch(0.24 0.03 160 / 0.06), 0 8px 24px oklch(0.24 0.03 160 / 0.07);
-  --fonte-titulo: "Bricolage Grotesque", "Outfit", system-ui, sans-serif;
-  --fonte-corpo: "DM Sans", system-ui, sans-serif;
+  --sombra-cartao: 0 1px 2px oklch(0.24 0.02 255 / 0.06), 0 6px 18px oklch(0.24 0.02 255 / 0.06);
+  --fonte-titulo: "Libre Franklin", system-ui, sans-serif;
+  --fonte-corpo: "Public Sans", system-ui, sans-serif;
 }
 
 @theme inline {
@@ -144,7 +143,15 @@
 }
 
 @utility faixa-marca {
-  background-image: var(--gradiente-marca);
+  background-color: var(--color-primary);
   color: var(--color-primary-foreground);
+}
+
+@utility rotulo-campo {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
 }
 
