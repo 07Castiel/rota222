@@ -33,7 +33,7 @@ import {
 } from "@/lib/transporte.functions";
 import { cpfValido, formatarCpf, normalizarCpf } from "@/lib/cpf";
 import { dataCurta } from "@/lib/formato";
-import { ROTULO_TIPO, type Aluno } from "@/lib/tipos";
+import { ROTULO_STATUS, ROTULO_TIPO, type Aluno } from "@/lib/tipos";
 
 export const Route = createFileRoute("/admin/alunos")({
   head: () => ({
