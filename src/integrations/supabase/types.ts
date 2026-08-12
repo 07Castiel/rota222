@@ -38,10 +38,17 @@ export type Database = {
           cpf: string
           created_at: string
           curso: string
+          dias_semana: string[]
+          email: string | null
+          endereco: string | null
           id: string
+          inicio_aulas: string | null
           instituicao: string
           matricula: string
+          nascimento: string | null
           nome: string
+          rg: string | null
+          telefone: string | null
           updated_at: string
         }
         Insert: {
@@ -49,10 +56,17 @@ export type Database = {
           cpf: string
           created_at?: string
           curso: string
+          dias_semana?: string[]
+          email?: string | null
+          endereco?: string | null
           id?: string
+          inicio_aulas?: string | null
           instituicao: string
           matricula: string
+          nascimento?: string | null
           nome: string
+          rg?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Update: {
@@ -60,10 +74,17 @@ export type Database = {
           cpf?: string
           created_at?: string
           curso?: string
+          dias_semana?: string[]
+          email?: string | null
+          endereco?: string | null
           id?: string
+          inicio_aulas?: string | null
           instituicao?: string
           matricula?: string
+          nascimento?: string | null
           nome?: string
+          rg?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -162,30 +183,42 @@ export type Database = {
       solicitacoes: {
         Row: {
           aluno_id: string
+          cancelada_em: string | null
           created_at: string
           id: string
           onibus_ida_id: string | null
           onibus_volta_id: string | null
+          poltrona_ida: number | null
+          poltrona_volta: number | null
+          status: string
           tipo: string
           updated_at: string
           viagem_id: string
         }
         Insert: {
           aluno_id: string
+          cancelada_em?: string | null
           created_at?: string
           id?: string
           onibus_ida_id?: string | null
           onibus_volta_id?: string | null
+          poltrona_ida?: number | null
+          poltrona_volta?: number | null
+          status?: string
           tipo: string
           updated_at?: string
           viagem_id: string
         }
         Update: {
           aluno_id?: string
+          cancelada_em?: string | null
           created_at?: string
           id?: string
           onibus_ida_id?: string | null
           onibus_volta_id?: string | null
+          poltrona_ida?: number | null
+          poltrona_volta?: number | null
+          status?: string
           tipo?: string
           updated_at?: string
           viagem_id?: string

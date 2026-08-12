@@ -34,6 +34,49 @@ export interface Aluno {
   curso: string;
   instituicao: string;
   ativo: boolean;
+  nascimento: string | null;
+  rg: string | null;
+  endereco: string | null;
+  telefone: string | null;
+  email: string | null;
+  dias_semana: string[];
+  inicio_aulas: string | null;
+}
+
+export type StatusSolicitacao = "confirmada" | "cancelada" | "encerrada" | "viagem_cancelada";
+
+export const ROTULO_STATUS: Record<StatusSolicitacao, string> = {
+  confirmada: "Confirmada",
+  cancelada: "Cancelada",
+  encerrada: "Encerrada",
+  viagem_cancelada: "Viagem cancelada",
+};
+
+export interface ItemHistorico {
+  id: string;
+  data: string;
+  tipo: TipoViagem;
+  onibus_ida: string | null;
+  onibus_volta: string | null;
+  rota_ida: string | null;
+  rota_volta: string | null;
+  saida_pacuja: string | null;
+  saida_sobral: string | null;
+  poltrona_ida: number | null;
+  poltrona_volta: number | null;
+  criado_em: string;
+  status: StatusSolicitacao;
+}
+
+export interface InicioAluno {
+  aluno: Aluno;
+  proxima: {
+    viagem: Viagem;
+    janela: "aberta" | "aguardando" | "encerrada";
+    saida_pacuja: string | null;
+  } | null;
+  solicitacao: ItemHistorico | null;
+  historico: ItemHistorico[];
 }
 
 export interface SolicitacaoDetalhe {
@@ -45,6 +88,7 @@ export interface SolicitacaoDetalhe {
   poltrona_ida: number | null;
   poltrona_volta: number | null;
 }
+
 
 export interface LinhaPassageiro {
   solicitacao_id: string;
