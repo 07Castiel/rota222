@@ -55,7 +55,16 @@ const VAZIO = {
   curso: "",
   instituicao: "",
   ativo: true,
+  nascimento: "",
+  rg: "",
+  endereco: "",
+  telefone: "",
+  email: "",
+  dias_semana: [] as string[],
+  inicio_aulas: "",
 };
+
+const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 type Status = "todos" | "ativos" | "inativos";
 
@@ -131,6 +140,13 @@ function PaginaAlunos() {
       curso: a.curso,
       instituicao: a.instituicao,
       ativo: a.ativo,
+      nascimento: a.nascimento ?? "",
+      rg: a.rg ?? "",
+      endereco: a.endereco ?? "",
+      telefone: a.telefone ?? "",
+      email: a.email ?? "",
+      dias_semana: a.dias_semana ?? [],
+      inicio_aulas: a.inicio_aulas ?? "",
     });
     setAberto(true);
   }
@@ -329,6 +345,92 @@ function PaginaAlunos() {
                 onChange={(e) => setForm({ ...form, instituicao: e.target.value })}
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="nascimento">Data de nascimento</Label>
+                <Input
+                  id="nascimento"
+                  type="date"
+                  value={form.nascimento}
+                  onChange={(e) => setForm({ ...form, nascimento: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rg">RG</Label>
+                <Input
+                  id="rg"
+                  value={form.rg}
+                  onChange={(e) => setForm({ ...form, rg: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endereco">Endereço</Label>
+              <Input
+                id="endereco"
+                value={form.endereco}
+                onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={form.telefone}
+                  onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inicio-aulas">Início das aulas</Label>
+              <Input
+                id="inicio-aulas"
+                type="date"
+                value={form.inicio_aulas}
+                onChange={(e) => setForm({ ...form, inicio_aulas: e.target.value })}
+              />
+            </div>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Dias da semana com aula</legend>
+              <div className="flex flex-wrap gap-2">
+                {DIAS.map((d) => {
+                  const marcado = form.dias_semana.includes(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      aria-pressed={marcado}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          dias_semana: marcado
+                            ? form.dias_semana.filter((x) => x !== d)
+                            : [...form.dias_semana, d],
+                        })
+                      }
+                      className={
+                        "rounded-full border px-3 py-1 text-sm " +
+                        (marcado
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-input bg-background text-muted-foreground")
+                      }
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
             <div className="flex items-center gap-3">
               <Switch
                 id="ativo"
