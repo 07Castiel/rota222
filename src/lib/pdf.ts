@@ -1,6 +1,8 @@
 import type { PainelViagem } from "./tipos";
 import { dataExtenso } from "./formato";
 
+const dois = (n: number | null) => (n === null ? "-" : String(n).padStart(2, "0"));
+
 export async function exportarPdfViagem(painel: PainelViagem) {
   const [{ jsPDF }, autoTableModule] = await Promise.all([
     import("jspdf"),
@@ -11,8 +13,8 @@ export async function exportarPdfViagem(painel: PainelViagem) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   let primeira = true;
 
-  for (const trecho of painel.trechos) {
-    if (trecho.passageiros.length === 0) continue;
+  for (const lista of painel.listas) {
+    if (lista.linhas.length === 0) continue;
     if (!primeira) doc.addPage();
     primeira = false;
 
@@ -21,31 +23,36 @@ export async function exportarPdfViagem(painel: PainelViagem) {
     doc.setFontSize(11);
     doc.text(`Data: ${dataExtenso(painel.viagem.data)}`, 40, 66);
     doc.text(
-      `${trecho.onibus.nome}${trecho.onibus.rota ? ` (${trecho.onibus.rota})` : ""} · ${
-        trecho.trecho === "ida" ? "Ida" : "Volta"
-      } ${trecho.origem} para ${trecho.destino} · ${trecho.horario}`,
+      `${lista.onibus.nome}${lista.onibus.rota ? ` (${lista.onibus.rota})` : ""} · Ida ${lista.hora_ida} · Volta ${lista.hora_volta}`,
       40,
       82,
     );
     doc.text(
-      `Passageiros: ${trecho.passageiros.length} de ${trecho.onibus.capacidade}`,
+      `Ida: ${lista.onibus.ocupados_ida} de ${lista.onibus.capacidade} · Volta: ${lista.onibus.ocupados_volta} de ${lista.onibus.capacidade}`,
       40,
       98,
     );
 
     autoTable(doc, {
       startY: 112,
-      head: [["Poltrona", "Nome", "Matrícula", "Curso", "Assinatura"]],
-      body: trecho.passageiros.map((p) => [
-        String(p.poltrona),
-        p.nome,
-        p.matricula,
-        p.curso,
+      head: [["Nº", "Nome", "Matrícula", "Curso", "IDA", "VOLTA", "Assinatura"]],
+      body: lista.linhas.map((l, i) => [
+        String(i + 1),
+        l.nome,
+        l.matricula,
+        l.curso,
+        dois(l.poltrona_ida),
+        dois(l.poltrona_volta),
         "",
       ]),
       styles: { fontSize: 9, cellPadding: 4 },
       headStyles: { fillColor: [38, 78, 68] },
-      columnStyles: { 0: { cellWidth: 55 }, 4: { cellWidth: 110 } },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        4: { cellWidth: 42, halign: "center" },
+        5: { cellWidth: 46, halign: "center" },
+        6: { cellWidth: 100 },
+      },
     });
   }
 

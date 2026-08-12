@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Loader2, Pencil, Plus, Search } from "lucide-react";
+import { Eye, Loader2, Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminShell } from "@/components/AdminShell";
@@ -10,6 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -17,9 +25,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { alternarAtivoFn, listarAlunosFn, salvarAlunoFn } from "@/lib/transporte.functions";
+import {
+  alternarAtivoFn,
+  detalhesAlunoFn,
+  listarAlunosFn,
+  salvarAlunoFn,
+} from "@/lib/transporte.functions";
 import { cpfValido, formatarCpf, normalizarCpf } from "@/lib/cpf";
-import type { Aluno } from "@/lib/tipos";
+import { dataCurta } from "@/lib/formato";
+import { ROTULO_TIPO, type Aluno } from "@/lib/tipos";
 
 export const Route = createFileRoute("/admin/alunos")({
   head: () => ({
@@ -43,20 +57,34 @@ const VAZIO = {
   ativo: true,
 };
 
+type Status = "todos" | "ativos" | "inativos";
+
+const poltrona = (n: number | null) => (n === null ? "-" : String(n).padStart(2, "0"));
+
 function PaginaAlunos() {
   const queryClient = useQueryClient();
   const listar = useServerFn(listarAlunosFn);
   const salvar = useServerFn(salvarAlunoFn);
   const alternar = useServerFn(alternarAtivoFn);
+  const detalhar = useServerFn(detalhesAlunoFn);
 
   const [busca, setBusca] = useState("");
+  const [status, setStatus] = useState<Status>("todos");
   const [aberto, setAberto] = useState(false);
+  const [verId, setVerId] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | undefined>(undefined);
   const [form, setForm] = useState({ ...VAZIO });
 
   const { data: alunos, isPending } = useQuery({
-    queryKey: ["alunos", busca],
-    queryFn: () => listar({ data: { busca } }),
+    queryKey: ["alunos", busca, status],
+    queryFn: () => listar({ data: { busca, status } }),
+    retry: false,
+  });
+
+  const { data: detalhe, isPending: carregandoDetalhe } = useQuery({
+    queryKey: ["aluno-detalhe", verId],
+    queryFn: () => detalhar({ data: { id: verId as string } }),
+    enabled: verId !== null,
     retry: false,
   });
 
@@ -73,13 +101,18 @@ function PaginaAlunos() {
       toast.success(editandoId ? "Aluno atualizado." : "Aluno cadastrado.");
       setAberto(false);
       await queryClient.invalidateQueries({ queryKey: ["alunos"] });
+      await queryClient.invalidateQueries({ queryKey: ["aluno-detalhe"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const trocarAtivo = useMutation({
     mutationFn: (v: { id: string; ativo: boolean }) => alternar({ data: v }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["alunos"] }),
+    onSuccess: async (_r, v) => {
+      toast.success(v.ativo ? "Aluno reativado." : "Aluno inativado. O histórico foi preservado.");
+      await queryClient.invalidateQueries({ queryKey: ["alunos"] });
+      await queryClient.invalidateQueries({ queryKey: ["aluno-detalhe"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -117,10 +150,20 @@ function PaginaAlunos() {
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nome, CPF ou matrícula"
+            placeholder="Buscar por nome, CPF, matrícula, curso ou instituição"
             className="h-11 pl-9"
           />
         </div>
+        <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+          <SelectTrigger className="h-11 w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="ativos">Somente ativos</SelectItem>
+            <SelectItem value="inativos">Somente inativos</SelectItem>
+          </SelectContent>
+        </Select>
         <Button className="h-11" onClick={abrirNovo}>
           <Plus className="h-4 w-4" /> Novo aluno
         </Button>
@@ -136,7 +179,10 @@ function PaginaAlunos() {
             {alunos.map((a) => (
               <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <div className="min-w-48 flex-1">
-                  <p className="font-medium">{a.nome}</p>
+                  <div className="flex items-center gap-2 font-medium">
+                    {a.nome}
+                    {!a.ativo ? <Badge variant="secondary">Inativo</Badge> : null}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {formatarCpf(a.cpf)} · {a.matricula} · {a.curso} · {a.instituicao}
                   </p>
@@ -145,9 +191,13 @@ function PaginaAlunos() {
                   <span className="text-xs text-muted-foreground">{a.ativo ? "Ativo" : "Inativo"}</span>
                   <Switch
                     checked={a.ativo}
+                    aria-label={a.ativo ? "Inativar aluno" : "Reativar aluno"}
                     onCheckedChange={(v) => trocarAtivo.mutate({ id: a.id, ativo: v })}
                   />
-                  <Button variant="ghost" size="sm" onClick={() => abrirEdicao(a)}>
+                  <Button variant="ghost" size="sm" aria-label="Ver aluno" onClick={() => setVerId(a.id)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" aria-label="Editar aluno" onClick={() => abrirEdicao(a)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
@@ -158,6 +208,73 @@ function PaginaAlunos() {
           <p className="p-10 text-center text-sm text-muted-foreground">Nenhum aluno encontrado.</p>
         )}
       </div>
+
+      <Dialog open={verId !== null} onOpenChange={(o) => !o && setVerId(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Dados do aluno</DialogTitle>
+          </DialogHeader>
+          {carregandoDetalhe || !detalhe ? (
+            <div className="flex items-center gap-2 py-8 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+            </div>
+          ) : (
+            <div className="space-y-4 text-sm">
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <Campo rotulo="Nome" valor={detalhe.aluno.nome} />
+                <Campo rotulo="CPF" valor={formatarCpf(detalhe.aluno.cpf)} />
+                <Campo rotulo="Matrícula" valor={detalhe.aluno.matricula} />
+                <Campo rotulo="Curso" valor={detalhe.aluno.curso} />
+                <Campo rotulo="Instituição" valor={detalhe.aluno.instituicao} />
+                <Campo rotulo="Status" valor={detalhe.aluno.ativo ? "Ativo" : "Inativo"} />
+              </dl>
+
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Histórico de solicitações
+                </p>
+                {detalhe.historico.length === 0 ? (
+                  <p className="text-muted-foreground">Nenhuma solicitação registrada.</p>
+                ) : (
+                  <ul className="divide-y rounded-md border">
+                    {detalhe.historico.map((h) => (
+                      <li key={`${h.viagem_data}-${h.tipo}`} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                        <span>
+                          {h.viagem_data ? dataCurta(h.viagem_data) : "—"} · {ROTULO_TIPO[h.tipo]}
+                        </span>
+                        <span className="tabular-nums text-muted-foreground">
+                          IDA {poltrona(h.poltrona_ida)} · VOLTA {poltrona(h.poltrona_volta)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            {detalhe ? (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  trocarAtivo.mutate({ id: detalhe.aluno.id, ativo: !detalhe.aluno.ativo })
+                }
+              >
+                {detalhe.aluno.ativo ? "Inativar" : "Reativar"}
+              </Button>
+            ) : null}
+            <Button
+              onClick={() => {
+                if (!detalhe) return;
+                setVerId(null);
+                abrirEdicao(detalhe.aluno);
+              }}
+            >
+              Editar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -231,5 +348,14 @@ function PaginaAlunos() {
         </DialogContent>
       </Dialog>
     </AdminShell>
+  );
+}
+
+function Campo({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{rotulo}</dt>
+      <dd className="font-medium">{valor}</dd>
+    </div>
   );
 }

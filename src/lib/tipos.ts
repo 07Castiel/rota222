@@ -46,28 +46,29 @@ export interface SolicitacaoDetalhe {
   poltrona_volta: number | null;
 }
 
-export interface Passageiro {
-  poltrona: number;
+export interface LinhaPassageiro {
+  solicitacao_id: string;
   nome: string;
   matricula: string;
   curso: string;
   tipo: TipoViagem;
+  poltrona_ida: number | null;
+  poltrona_volta: number | null;
 }
 
-export interface PainelTrecho {
+export interface PainelOnibus {
   onibus: OnibusOcupacao;
-  trecho: Trecho;
-  horario: string;
-  origem: string;
-  destino: string;
-  passageiros: Passageiro[];
+  hora_ida: string;
+  hora_volta: string;
+  linhas: LinhaPassageiro[];
 }
 
 export interface PainelViagem {
   viagem: Viagem;
   onibus: OnibusOcupacao[];
-  trechos: PainelTrecho[];
+  listas: PainelOnibus[];
 }
+
 
 export const ROTULO_TIPO: Record<TipoViagem, string> = {
   ida: "Apenas ida",

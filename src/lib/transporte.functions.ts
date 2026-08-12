@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
   esquemaAluno,
+  esquemaAlunoId,
   esquemaAtivo,
   esquemaBusca,
   esquemaCpf,
@@ -67,7 +68,14 @@ export const listarAlunosFn = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => esquemaBusca.parse(d ?? {}))
   .handler(async ({ data }) => {
     const { listarAlunos } = await import("./transporte.server");
-    return listarAlunos(data.busca);
+    return listarAlunos(data.busca, data.status);
+  });
+
+export const detalhesAlunoFn = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => esquemaAlunoId.parse(d))
+  .handler(async ({ data }) => {
+    const { detalhesAluno } = await import("./transporte.server");
+    return detalhesAluno(data.id);
   });
 
 export const salvarAlunoFn = createServerFn({ method: "POST" })
