@@ -179,10 +179,10 @@ function PaginaAlunos() {
             {alunos.map((a) => (
               <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <div className="min-w-48 flex-1">
-                  <p className="flex items-center gap-2 font-medium">
+                  <div className="flex items-center gap-2 font-medium">
                     {a.nome}
                     {!a.ativo ? <Badge variant="secondary">Inativo</Badge> : null}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {formatarCpf(a.cpf)} · {a.matricula} · {a.curso} · {a.instituicao}
                   </p>
