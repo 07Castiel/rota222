@@ -14,6 +14,7 @@ import { Route as AlunoRouteImport } from './routes/aluno'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAlunosRouteImport } from './routes/admin.alunos'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AlunoIndexRouteImport } from './routes/aluno.index'
 import { Route as AdminViagensIndexRouteImport } from './routes/admin.viagens.index'
 import { Route as AdminViagensIdRouteImport } from './routes/admin.viagens.$id'
 
@@ -42,6 +43,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlunoIndexRoute = AlunoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AlunoRoute,
+} as any)
 const AdminViagensIndexRoute = AdminViagensIndexRouteImport.update({
   id: '/admin/viagens/',
   path: '/admin/viagens/',
@@ -55,29 +61,31 @@ const AdminViagensIdRoute = AdminViagensIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/aluno': typeof AlunoRoute
+  '/aluno': typeof AlunoRouteWithChildren
   '/admin/alunos': typeof AdminAlunosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
+  '/aluno/': typeof AlunoIndexRoute
   '/admin/viagens/$id': typeof AdminViagensIdRoute
   '/admin/viagens/': typeof AdminViagensIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/aluno': typeof AlunoRoute
   '/admin/alunos': typeof AdminAlunosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin': typeof AdminIndexRoute
+  '/aluno': typeof AlunoIndexRoute
   '/admin/viagens/$id': typeof AdminViagensIdRoute
   '/admin/viagens': typeof AdminViagensIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/aluno': typeof AlunoRoute
+  '/aluno': typeof AlunoRouteWithChildren
   '/admin/alunos': typeof AdminAlunosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
+  '/aluno/': typeof AlunoIndexRoute
   '/admin/viagens/$id': typeof AdminViagensIdRoute
   '/admin/viagens/': typeof AdminViagensIndexRoute
 }
@@ -89,15 +97,16 @@ export interface FileRouteTypes {
     | '/admin/alunos'
     | '/admin/login'
     | '/admin/'
+    | '/aluno/'
     | '/admin/viagens/$id'
     | '/admin/viagens/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/aluno'
     | '/admin/alunos'
     | '/admin/login'
     | '/admin'
+    | '/aluno'
     | '/admin/viagens/$id'
     | '/admin/viagens'
   id:
@@ -107,13 +116,14 @@ export interface FileRouteTypes {
     | '/admin/alunos'
     | '/admin/login'
     | '/admin/'
+    | '/aluno/'
     | '/admin/viagens/$id'
     | '/admin/viagens/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AlunoRoute: typeof AlunoRoute
+  AlunoRoute: typeof AlunoRouteWithChildren
   AdminAlunosRoute: typeof AdminAlunosRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -158,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aluno/': {
+      id: '/aluno/'
+      path: '/'
+      fullPath: '/aluno/'
+      preLoaderRoute: typeof AlunoIndexRouteImport
+      parentRoute: typeof AlunoRoute
+    }
     '/admin/viagens/': {
       id: '/admin/viagens/'
       path: '/admin/viagens'
@@ -175,9 +192,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AlunoRouteChildren {
+  AlunoIndexRoute: typeof AlunoIndexRoute
+}
+
+const AlunoRouteChildren: AlunoRouteChildren = {
+  AlunoIndexRoute: AlunoIndexRoute,
+}
+
+const AlunoRouteWithChildren = AlunoRoute._addFileChildren(AlunoRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AlunoRoute: AlunoRoute,
+  AlunoRoute: AlunoRouteWithChildren,
   AdminAlunosRoute: AdminAlunosRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminIndexRoute: AdminIndexRoute,
