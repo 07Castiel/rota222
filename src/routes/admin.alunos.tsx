@@ -238,9 +238,10 @@ function PaginaAlunos() {
                 ) : (
                   <ul className="divide-y rounded-md border">
                     {detalhe.historico.map((h) => (
-                      <li key={`${h.viagem_data}-${h.tipo}`} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                      <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                         <span>
-                          {h.viagem_data ? dataCurta(h.viagem_data) : "—"} · {ROTULO_TIPO[h.tipo]}
+                          {h.data ? dataCurta(h.data) : "—"} · {ROTULO_TIPO[h.tipo]} ·{" "}
+                          <span className="text-muted-foreground">{ROTULO_STATUS[h.status]}</span>
                         </span>
                         <span className="tabular-nums text-muted-foreground">
                           IDA {poltrona(h.poltrona_ida)} · VOLTA {poltrona(h.poltrona_volta)}
