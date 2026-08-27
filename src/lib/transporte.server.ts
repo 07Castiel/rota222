@@ -15,6 +15,7 @@ import type {
   Viagem,
 } from "./tipos";
 
+import { auditar, encerrarPassadas, exigirLimite, registrarTentativa } from "./seguranca.server";
 import {
   encerrarSessaoAdmin,
   encerrarSessaoAluno,
@@ -74,8 +75,12 @@ function viagemComEstado(v: {
 /* ---------------- Aluno ---------------- */
 
 export async function entrarComCpf(cpfBruto: string): Promise<Aluno> {
+  await exigirLimite("aluno");
   const cpf = normalizarCpf(cpfBruto);
-  if (!cpfValido(cpf)) throw erroAmigavel(new Error("CPF_INVALIDO"));
+  if (!cpfValido(cpf)) {
+    await registrarTentativa("aluno", false);
+    throw erroAmigavel(new Error("CPF_INVALIDO"));
+  }
 
   const { data, error } = await supabaseAdmin
     .from("alunos")
@@ -83,9 +88,12 @@ export async function entrarComCpf(cpfBruto: string): Promise<Aluno> {
     .eq("cpf", cpf)
     .maybeSingle();
   if (error) throw erroAmigavel(error);
-  if (!data) throw erroAmigavel(new Error("ALUNO_NAO_CADASTRADO"));
-  if (!data.ativo) throw erroAmigavel(new Error("ALUNO_INATIVO"));
+  if (!data || !data.ativo) {
+    await registrarTentativa("aluno", false);
+    throw erroAmigavel(new Error(!data ? "ALUNO_NAO_CADASTRADO" : "ALUNO_INATIVO"));
+  }
 
+  await registrarTentativa("aluno", true);
   await iniciarSessaoAluno(data.id);
   return data as Aluno;
 }
@@ -221,14 +229,21 @@ export async function cancelar(viagemId: string): Promise<void> {
     p_viagem: viagemId,
   });
   if (error) throw erroAmigavel(error);
+  await auditar(`aluno:${alunoId}`, "cancelou", "solicitacao", null, { viagem_id: viagemId });
 }
 
 /* ---------------- Administrador ---------------- */
 
 export async function entrarAdmin(senha: string): Promise<void> {
+  await exigirLimite("admin");
   const { data, error } = await supabaseAdmin.rpc("verificar_senha_admin", { p_senha: senha });
   if (error) throw erroAmigavel(error);
-  if (!data) throw new Error("Senha incorreta.");
+  if (!data) {
+    await registrarTentativa("admin", false);
+    throw new Error("Senha incorreta.");
+  }
+  await registrarTentativa("admin", true);
+  await auditar("admin", "entrou", "sessao", null);
   await iniciarSessaoAdmin();
 }
 
@@ -317,6 +332,7 @@ async function historicoDoAluno(alunoId: string): Promise<ItemHistorico[]> {
 /** Área inicial do aluno: cadastro, próxima data, solicitação atual e histórico. */
 export async function inicioAluno(): Promise<InicioAluno> {
   const alunoId = await exigirAluno();
+  await encerrarPassadas();
   const aluno = await alunoAtual();
   if (!aluno) throw erroAmigavel(new Error("SESSAO_EXPIRADA"));
 
@@ -419,7 +435,9 @@ export async function salvarAluno(entrada: EntradaAluno): Promise<Aluno> {
     if (error.code === "23505") throw new Error("Já existe um aluno com este CPF.");
     throw erroAmigavel(error);
   }
-  return data as Aluno;
+  const salvo = data as Aluno;
+  await auditar("admin", entrada.id ? "editou" : "criou", "aluno", salvo.id, { nome: salvo.nome });
+  return salvo;
 }
 
 
@@ -427,10 +445,12 @@ export async function alternarAtivo(id: string, ativo: boolean): Promise<void> {
   await exigirAdmin();
   const { error } = await supabaseAdmin.from("alunos").update({ ativo }).eq("id", id);
   if (error) throw erroAmigavel(error);
+  await auditar("admin", ativo ? "reativou" : "inativou", "aluno", id);
 }
 
 export async function listarViagens(): Promise<Viagem[]> {
   await exigirAdmin();
+  await encerrarPassadas();
   const { data, error } = await supabaseAdmin
     .from("viagens")
     .select("id, data, abertura_em, fechamento_em, status")
@@ -464,6 +484,7 @@ export async function salvarViagem(entrada: {
     if (error.code === "23505") throw new Error("Já existe uma viagem nesta data.");
     throw erroAmigavel(error);
   }
+  await auditar("admin", entrada.id ? "editou" : "criou", "viagem", data.id, { data: data.data });
   return viagemComEstado(data);
 }
 
@@ -471,6 +492,7 @@ export async function alterarStatusViagem(id: string, status: Viagem["status"]):
   await exigirAdmin();
   const { error } = await supabaseAdmin.from("viagens").update({ status }).eq("id", id);
   if (error) throw erroAmigavel(error);
+  await auditar("admin", "alterou_status", "viagem", id, { status });
 }
 
 export async function painelViagem(viagemId: string): Promise<PainelViagem> {
@@ -536,3 +558,183 @@ export async function painelViagem(viagemId: string): Promise<PainelViagem> {
   return { viagem: viagemComEstado(v), onibus, listas };
 }
 
+
+/* ---------------- Ônibus (CRUD) ---------------- */
+
+export interface OnibusAdmin extends Onibus {
+  ordem: number;
+  ativo: boolean;
+}
+
+const CAMPOS_ONIBUS =
+  "id, codigo, nome, rota, descricao_rota, capacidade, hora_ida, hora_volta, ordem, ativo";
+
+export async function listarOnibusAdmin(): Promise<OnibusAdmin[]> {
+  await exigirAdmin();
+  const { data, error } = await supabaseAdmin.from("onibus").select(CAMPOS_ONIBUS).order("ordem");
+  if (error) throw erroAmigavel(error);
+  return (data ?? []) as OnibusAdmin[];
+}
+
+export interface EntradaOnibus {
+  id?: string | undefined;
+  codigo: string;
+  nome: string;
+  rota?: string | null | undefined;
+  descricao_rota?: string | null | undefined;
+  capacidade: number;
+  hora_ida: string;
+  hora_volta: string;
+  ordem: number;
+  ativo: boolean;
+}
+
+export async function salvarOnibus(entrada: EntradaOnibus): Promise<OnibusAdmin> {
+  await exigirAdmin();
+  const registro = {
+    codigo: entrada.codigo.trim(),
+    nome: entrada.nome.trim(),
+    rota: texto(entrada.rota),
+    descricao_rota: texto(entrada.descricao_rota),
+    capacidade: entrada.capacidade,
+    hora_ida: entrada.hora_ida,
+    hora_volta: entrada.hora_volta,
+    ordem: entrada.ordem,
+    ativo: entrada.ativo,
+  };
+
+  if (entrada.id) {
+    const { count } = await supabaseAdmin
+      .from("assentos")
+      .select("id", { count: "exact", head: true })
+      .eq("onibus_id", entrada.id)
+      .gt("numero", entrada.capacidade);
+    if ((count ?? 0) > 0) {
+      throw new Error(
+        "Existem poltronas ocupadas acima da nova capacidade. Reduza a capacidade após liberar essas reservas.",
+      );
+    }
+  }
+
+  const query = entrada.id
+    ? supabaseAdmin.from("onibus").update(registro).eq("id", entrada.id)
+    : supabaseAdmin.from("onibus").insert(registro);
+  const { data, error } = await query.select(CAMPOS_ONIBUS).single();
+  if (error) {
+    if (error.code === "23505") throw new Error("Já existe um ônibus com este código.");
+    throw erroAmigavel(error);
+  }
+  await auditar("admin", entrada.id ? "editou" : "criou", "onibus", data.id, {
+    codigo: data.codigo,
+  });
+  return data as OnibusAdmin;
+}
+
+export async function alternarOnibusAtivo(id: string, ativo: boolean): Promise<void> {
+  await exigirAdmin();
+  const { error } = await supabaseAdmin.from("onibus").update({ ativo }).eq("id", id);
+  if (error) throw erroAmigavel(error);
+  await auditar("admin", ativo ? "reativou" : "inativou", "onibus", id);
+}
+
+/* ---------------- Viagens em lote ---------------- */
+
+export async function criarViagensEmLote(entrada: {
+  inicio: string;
+  fim: string;
+  dias: number[];
+  abertura_hora: string;
+  fechamento_hora: string;
+  dias_antes_abertura: number;
+}): Promise<{ criadas: number; ignoradas: number }> {
+  await exigirAdmin();
+  const inicio = new Date(`${entrada.inicio}T12:00:00`);
+  const fim = new Date(`${entrada.fim}T12:00:00`);
+  if (Number.isNaN(inicio.getTime()) || Number.isNaN(fim.getTime()) || fim < inicio) {
+    throw new Error("Período inválido.");
+  }
+  if (entrada.dias.length === 0) throw new Error("Selecione ao menos um dia da semana.");
+  if ((fim.getTime() - inicio.getTime()) / 86400000 > 400) {
+    throw new Error("Escolha um período de até 400 dias.");
+  }
+
+  const registros: { data: string; abertura_em: string; fechamento_em: string }[] = [];
+  for (let d = new Date(inicio); d <= fim; d.setDate(d.getDate() + 1)) {
+    if (!entrada.dias.includes(d.getDay())) continue;
+    const dia = d.toISOString().slice(0, 10);
+    const abertura = new Date(`${dia}T${entrada.abertura_hora}:00-03:00`);
+    abertura.setDate(abertura.getDate() - entrada.dias_antes_abertura);
+    const fechamento = new Date(`${dia}T${entrada.fechamento_hora}:00-03:00`);
+    if (fechamento <= abertura) throw new Error("O fechamento deve ser posterior à abertura.");
+    registros.push({
+      data: dia,
+      abertura_em: abertura.toISOString(),
+      fechamento_em: fechamento.toISOString(),
+    });
+  }
+  if (registros.length === 0) return { criadas: 0, ignoradas: 0 };
+
+  const { data: existentes } = await supabaseAdmin
+    .from("viagens")
+    .select("data")
+    .in("data", registros.map((r) => r.data));
+  const jaExiste = new Set((existentes ?? []).map((v) => v.data));
+  const novos = registros.filter((r) => !jaExiste.has(r.data));
+
+  if (novos.length > 0) {
+    const { error } = await supabaseAdmin.from("viagens").insert(novos);
+    if (error) throw erroAmigavel(error);
+  }
+  await auditar("admin", "criou_lote", "viagem", null, {
+    criadas: novos.length,
+    inicio: entrada.inicio,
+    fim: entrada.fim,
+  });
+  return { criadas: novos.length, ignoradas: registros.length - novos.length };
+}
+
+/* ---------------- Resumo do painel ---------------- */
+
+export interface ResumoAdmin {
+  alunos_ativos: number;
+  alunos_inativos: number;
+  viagens_futuras: number;
+  proxima: { viagem: Viagem; onibus: OnibusOcupacao[]; total: number } | null;
+}
+
+export async function resumoAdmin(): Promise<ResumoAdmin> {
+  await exigirAdmin();
+  await encerrarPassadas();
+
+  const [ativos, inativos] = await Promise.all([
+    supabaseAdmin.from("alunos").select("id", { count: "exact", head: true }).eq("ativo", true),
+    supabaseAdmin.from("alunos").select("id", { count: "exact", head: true }).eq("ativo", false),
+  ]);
+
+  const { data: viagens, error } = await supabaseAdmin
+    .from("viagens")
+    .select("id, data, abertura_em, fechamento_em, status")
+    .neq("status", "cancelada")
+    .gte("data", hojeCeara())
+    .order("data");
+  if (error) throw erroAmigavel(error);
+
+  const bruta = viagens?.[0];
+  let proxima: ResumoAdmin["proxima"] = null;
+  if (bruta) {
+    const onibus = await ocupacao(bruta.id);
+    const { count } = await supabaseAdmin
+      .from("solicitacoes")
+      .select("id", { count: "exact", head: true })
+      .eq("viagem_id", bruta.id)
+      .eq("status", "confirmada");
+    proxima = { viagem: viagemComEstado(bruta), onibus, total: count ?? 0 };
+  }
+
+  return {
+    alunos_ativos: ativos.count ?? 0,
+    alunos_inativos: inativos.count ?? 0,
+    viagens_futuras: viagens?.length ?? 0,
+    proxima,
+  };
+}
