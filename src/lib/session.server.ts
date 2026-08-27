@@ -5,7 +5,9 @@ const COOKIE_ADMIN = "tp_admin";
 const DURACAO_MS = 1000 * 60 * 60 * 8;
 
 function segredo(): string {
-  const s = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_URL"];
+  // Segredo dedicado às sessões: trocar a chave do banco não invalida sessões
+  // nem expõe a chave de serviço a este uso secundário.
+  const s = process.env["SESSION_SECRET"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!s) throw new Error("Segredo de sessão indisponível");
   return s;
 }
