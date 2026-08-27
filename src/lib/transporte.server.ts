@@ -15,6 +15,7 @@ import type {
   Viagem,
 } from "./tipos";
 
+import { auditar, encerrarPassadas, exigirLimite, registrarTentativa } from "./seguranca.server";
 import {
   encerrarSessaoAdmin,
   encerrarSessaoAluno,
@@ -74,8 +75,12 @@ function viagemComEstado(v: {
 /* ---------------- Aluno ---------------- */
 
 export async function entrarComCpf(cpfBruto: string): Promise<Aluno> {
+  await exigirLimite("aluno");
   const cpf = normalizarCpf(cpfBruto);
-  if (!cpfValido(cpf)) throw erroAmigavel(new Error("CPF_INVALIDO"));
+  if (!cpfValido(cpf)) {
+    await registrarTentativa("aluno", false);
+    throw erroAmigavel(new Error("CPF_INVALIDO"));
+  }
 
   const { data, error } = await supabaseAdmin
     .from("alunos")
@@ -83,9 +88,12 @@ export async function entrarComCpf(cpfBruto: string): Promise<Aluno> {
     .eq("cpf", cpf)
     .maybeSingle();
   if (error) throw erroAmigavel(error);
-  if (!data) throw erroAmigavel(new Error("ALUNO_NAO_CADASTRADO"));
-  if (!data.ativo) throw erroAmigavel(new Error("ALUNO_INATIVO"));
+  if (!data || !data.ativo) {
+    await registrarTentativa("aluno", false);
+    throw erroAmigavel(new Error(!data ? "ALUNO_NAO_CADASTRADO" : "ALUNO_INATIVO"));
+  }
 
+  await registrarTentativa("aluno", true);
   await iniciarSessaoAluno(data.id);
   return data as Aluno;
 }
@@ -221,14 +229,21 @@ export async function cancelar(viagemId: string): Promise<void> {
     p_viagem: viagemId,
   });
   if (error) throw erroAmigavel(error);
+  await auditar(`aluno:${alunoId}`, "cancelou", "solicitacao", null, { viagem_id: viagemId });
 }
 
 /* ---------------- Administrador ---------------- */
 
 export async function entrarAdmin(senha: string): Promise<void> {
+  await exigirLimite("admin");
   const { data, error } = await supabaseAdmin.rpc("verificar_senha_admin", { p_senha: senha });
   if (error) throw erroAmigavel(error);
-  if (!data) throw new Error("Senha incorreta.");
+  if (!data) {
+    await registrarTentativa("admin", false);
+    throw new Error("Senha incorreta.");
+  }
+  await registrarTentativa("admin", true);
+  await auditar("admin", "entrou", "sessao", null);
   await iniciarSessaoAdmin();
 }
 
@@ -317,6 +332,7 @@ async function historicoDoAluno(alunoId: string): Promise<ItemHistorico[]> {
 /** Área inicial do aluno: cadastro, próxima data, solicitação atual e histórico. */
 export async function inicioAluno(): Promise<InicioAluno> {
   const alunoId = await exigirAluno();
+  await encerrarPassadas();
   const aluno = await alunoAtual();
   if (!aluno) throw erroAmigavel(new Error("SESSAO_EXPIRADA"));
 
@@ -419,7 +435,9 @@ export async function salvarAluno(entrada: EntradaAluno): Promise<Aluno> {
     if (error.code === "23505") throw new Error("Já existe um aluno com este CPF.");
     throw erroAmigavel(error);
   }
-  return data as Aluno;
+  const salvo = data as Aluno;
+  await auditar("admin", entrada.id ? "editou" : "criou", "aluno", salvo.id, { nome: salvo.nome });
+  return salvo;
 }
 
 
@@ -427,10 +445,12 @@ export async function alternarAtivo(id: string, ativo: boolean): Promise<void> {
   await exigirAdmin();
   const { error } = await supabaseAdmin.from("alunos").update({ ativo }).eq("id", id);
   if (error) throw erroAmigavel(error);
+  await auditar("admin", ativo ? "reativou" : "inativou", "aluno", id);
 }
 
 export async function listarViagens(): Promise<Viagem[]> {
   await exigirAdmin();
+  await encerrarPassadas();
   const { data, error } = await supabaseAdmin
     .from("viagens")
     .select("id, data, abertura_em, fechamento_em, status")
@@ -464,6 +484,7 @@ export async function salvarViagem(entrada: {
     if (error.code === "23505") throw new Error("Já existe uma viagem nesta data.");
     throw erroAmigavel(error);
   }
+  await auditar("admin", entrada.id ? "editou" : "criou", "viagem", data.id, { data: data.data });
   return viagemComEstado(data);
 }
 
@@ -471,6 +492,7 @@ export async function alterarStatusViagem(id: string, status: Viagem["status"]):
   await exigirAdmin();
   const { error } = await supabaseAdmin.from("viagens").update({ status }).eq("id", id);
   if (error) throw erroAmigavel(error);
+  await auditar("admin", "alterou_status", "viagem", id, { status });
 }
 
 export async function painelViagem(viagemId: string): Promise<PainelViagem> {
