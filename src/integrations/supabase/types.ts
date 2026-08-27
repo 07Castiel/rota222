@@ -141,6 +141,36 @@ export type Database = {
           },
         ]
       }
+      auditoria: {
+        Row: {
+          acao: string
+          ator: string
+          criado_em: string
+          detalhes: Json
+          entidade: string
+          entidade_id: string | null
+          id: string
+        }
+        Insert: {
+          acao: string
+          ator: string
+          criado_em?: string
+          detalhes?: Json
+          entidade: string
+          entidade_id?: string | null
+          id?: string
+        }
+        Update: {
+          acao?: string
+          ator?: string
+          criado_em?: string
+          detalhes?: Json
+          entidade?: string
+          entidade_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       onibus: {
         Row: {
           ativo: boolean
@@ -254,6 +284,30 @@ export type Database = {
           },
         ]
       }
+      tentativas_login: {
+        Row: {
+          chave: string
+          criado_em: string
+          escopo: string
+          id: string
+          sucesso: boolean
+        }
+        Insert: {
+          chave: string
+          criado_em?: string
+          escopo: string
+          id?: string
+          sucesso?: boolean
+        }
+        Update: {
+          chave?: string
+          criado_em?: string
+          escopo?: string
+          id?: string
+          sucesso?: boolean
+        }
+        Relationships: []
+      }
       viagens: {
         Row: {
           abertura_em: string
@@ -291,6 +345,7 @@ export type Database = {
         Args: { p_aluno: string; p_viagem: string }
         Returns: undefined
       }
+      encerrar_viagens_passadas: { Args: never; Returns: number }
       ocupacao_viagem: {
         Args: { p_viagem: string }
         Returns: {
@@ -315,6 +370,20 @@ export type Database = {
         }
         Returns: number
       }
+      registrar_auditoria: {
+        Args: {
+          p_acao: string
+          p_ator: string
+          p_detalhes: Json
+          p_entidade: string
+          p_entidade_id: string
+        }
+        Returns: undefined
+      }
+      registrar_tentativa: {
+        Args: { p_chave: string; p_escopo: string; p_sucesso: boolean }
+        Returns: undefined
+      }
       reservar_transporte: {
         Args: {
           p_aluno: string
@@ -324,6 +393,10 @@ export type Database = {
           p_viagem: string
         }
         Returns: Json
+      }
+      tentativas_recentes: {
+        Args: { p_chave: string; p_escopo: string; p_minutos: number }
+        Returns: number
       }
       verificar_senha_admin: { Args: { p_senha: string }; Returns: boolean }
     }
