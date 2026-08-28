@@ -63,3 +63,32 @@ export async function exportarPdfViagem(painel: PainelViagem) {
 
   doc.save(`lista-${painel.viagem.data}.pdf`);
 }
+
+/** Exporta a mesma lista unificada em CSV (compatível com Excel). */
+export function exportarCsvViagem(painel: PainelViagem) {
+  const linhas: string[][] = [["Ônibus", "Rota", "Nº", "Nome", "Matrícula", "Curso", "IDA", "VOLTA"]];
+  for (const lista of painel.listas) {
+    lista.linhas.forEach((l, i) => {
+      linhas.push([
+        lista.onibus.nome,
+        lista.onibus.rota ?? "",
+        String(i + 1),
+        l.nome,
+        l.matricula,
+        l.curso,
+        l.poltrona_ida ? String(l.poltrona_ida) : "-",
+        l.poltrona_volta ? String(l.poltrona_volta) : "-",
+      ]);
+    });
+  }
+  const csv = linhas
+    .map((l) => l.map((c) => `"${c.replace(/"/g, '""')}"`).join(";"))
+    .join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `passageiros-${painel.viagem.data}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
