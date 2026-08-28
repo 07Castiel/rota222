@@ -2,15 +2,17 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
-import { CalendarDays, Loader2, LogOut, Users } from "lucide-react";
+import { Bus, CalendarDays, Home, Loader2, LogOut, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { sairAdminFn, sessaoAdminFn } from "@/lib/transporte.functions";
 import { cn } from "@/lib/utils";
 
 const ABAS = [
-  { para: "/admin/viagens", rotulo: "Viagens", icone: CalendarDays },
-  { para: "/admin/alunos", rotulo: "Alunos", icone: Users },
+  { para: "/admin", rotulo: "Início", icone: Home, exato: true },
+  { para: "/admin/viagens", rotulo: "Viagens", icone: CalendarDays, exato: false },
+  { para: "/admin/alunos", rotulo: "Alunos", icone: Users, exato: false },
+  { para: "/admin/onibus", rotulo: "Ônibus", icone: Bus, exato: false },
 ] as const;
 
 export function AdminShell({ titulo, children }: { titulo: string; children: ReactNode }) {
@@ -64,7 +66,7 @@ export function AdminShell({ titulo, children }: { titulo: string; children: Rea
               to={a.para}
               className={cn(
                 "flex items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors",
-                caminho.startsWith(a.para)
+                (a.exato ? caminho === a.para || caminho === "/admin/" : caminho.startsWith(a.para))
                   ? "bg-background text-foreground"
                   : "text-primary-foreground/80 hover:bg-primary-foreground/10",
               )}
