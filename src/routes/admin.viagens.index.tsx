@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { CalendarDays, ChevronRight, Loader2, Pencil, Plus } from "lucide-react";
+import { CalendarDays, CalendarRange, ChevronRight, Loader2, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminShell } from "@/components/AdminShell";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   alterarStatusViagemFn,
+  criarViagensEmLoteFn,
   listarViagensFn,
   salvarViagemFn,
 } from "@/lib/transporte.functions";
@@ -43,10 +44,20 @@ function PaginaViagens() {
   const listar = useServerFn(listarViagensFn);
   const salvar = useServerFn(salvarViagemFn);
   const alterarStatus = useServerFn(alterarStatusViagemFn);
+  const criarLote = useServerFn(criarViagensEmLoteFn);
 
   const [aberto, setAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | undefined>(undefined);
   const [form, setForm] = useState({ data: "", abertura_em: "", fechamento_em: "" });
+  const [loteAberto, setLoteAberto] = useState(false);
+  const [lote, setLote] = useState({
+    inicio: "",
+    fim: "",
+    dias: [1, 2, 3, 4, 5] as number[],
+    abertura_hora: "08:00",
+    fechamento_hora: "12:00",
+    dias_antes_abertura: 1,
+  });
 
   const { data: viagens, isPending } = useQuery({
     queryKey: ["viagens"],
@@ -67,6 +78,18 @@ function PaginaViagens() {
     onSuccess: async () => {
       toast.success(editandoId ? "Viagem atualizada." : "Viagem criada.");
       setAberto(false);
+      await queryClient.invalidateQueries({ queryKey: ["viagens"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const gravarLote = useMutation({
+    mutationFn: () => criarLote({ data: lote }),
+    onSuccess: async (r) => {
+      toast.success(
+        `${r.criadas} data(s) criada(s).` + (r.ignoradas ? ` ${r.ignoradas} já existia(m).` : ""),
+      );
+      setLoteAberto(false);
       await queryClient.invalidateQueries({ queryKey: ["viagens"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -98,7 +121,10 @@ function PaginaViagens() {
 
   return (
     <AdminShell titulo="Datas de viagem">
-      <div className="mb-5 flex justify-end">
+      <div className="mb-5 flex flex-wrap justify-end gap-2">
+        <Button variant="outline" className="h-11" onClick={() => setLoteAberto(true)}>
+          <CalendarRange className="h-4 w-4" /> Criar em lote
+        </Button>
         <Button className="h-11" onClick={abrirNova}>
           <Plus className="h-4 w-4" /> Nova data
         </Button>
@@ -214,6 +240,123 @@ function PaginaViagens() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={loteAberto} onOpenChange={setLoteAberto}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Criar datas em lote</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              As datas que já existirem serão ignoradas.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="lote-inicio">Início do período</Label>
+                <Input
+                  id="lote-inicio"
+                  type="date"
+                  value={lote.inicio}
+                  onChange={(e) => setLote({ ...lote, inicio: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lote-fim">Fim do período</Label>
+                <Input
+                  id="lote-fim"
+                  type="date"
+                  value={lote.fim}
+                  onChange={(e) => setLote({ ...lote, fim: e.target.value })}
+                />
+              </div>
+            </div>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Dias da semana</legend>
+              <div className="flex flex-wrap gap-2">
+                {DIAS_SEMANA.map((d) => {
+                  const marcado = lote.dias.includes(d.valor);
+                  return (
+                    <button
+                      key={d.valor}
+                      type="button"
+                      aria-pressed={marcado}
+                      onClick={() =>
+                        setLote({
+                          ...lote,
+                          dias: marcado
+                            ? lote.dias.filter((x) => x !== d.valor)
+                            : [...lote.dias, d.valor],
+                        })
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                        marcado
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      {d.rotulo}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="lote-antes">Abrir quantos dias antes</Label>
+                <Input
+                  id="lote-antes"
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={lote.dias_antes_abertura}
+                  onChange={(e) =>
+                    setLote({ ...lote, dias_antes_abertura: Number(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lote-abertura">Hora de abertura</Label>
+                <Input
+                  id="lote-abertura"
+                  type="time"
+                  value={lote.abertura_hora}
+                  onChange={(e) => setLote({ ...lote, abertura_hora: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lote-fechamento">Hora de fechamento</Label>
+                <Input
+                  id="lote-fechamento"
+                  type="time"
+                  value={lote.fechamento_hora}
+                  onChange={(e) => setLote({ ...lote, fechamento_hora: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLoteAberto(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!lote.inicio || !lote.fim || lote.dias.length === 0 || gravarLote.isPending}
+              onClick={() => gravarLote.mutate()}
+            >
+              {gravarLote.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar datas"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }
+
+const DIAS_SEMANA = [
+  { valor: 1, rotulo: "Seg" },
+  { valor: 2, rotulo: "Ter" },
+  { valor: 3, rotulo: "Qua" },
+  { valor: 4, rotulo: "Qui" },
+  { valor: 5, rotulo: "Sex" },
+  { valor: 6, rotulo: "Sáb" },
+  { valor: 0, rotulo: "Dom" },
+];

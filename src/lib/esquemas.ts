@@ -61,3 +61,30 @@ export const esquemaStatusViagem = z.object({
   id: z.string().uuid(),
   status: z.enum(["aberta", "fechada", "cancelada"]),
 });
+
+export const esquemaOnibus = z.object({
+  id: z.string().uuid().optional(),
+  codigo: z.string().trim().min(2, "Informe o código").max(30),
+  nome: z.string().trim().min(2, "Informe o nome").max(80),
+  rota: z.string().trim().max(40).nullish(),
+  descricao_rota: z.string().trim().max(200).nullish(),
+  capacidade: z.number().int().min(1).max(100),
+  hora_ida: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido"),
+  hora_volta: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido"),
+  ordem: z.number().int().min(0).max(99),
+  ativo: z.boolean(),
+});
+
+export const esquemaOnibusAtivo = z.object({
+  id: z.string().uuid(),
+  ativo: z.boolean(),
+});
+
+export const esquemaLoteViagens = z.object({
+  inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  fim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
+  dias: z.array(z.number().int().min(0).max(6)).min(1, "Selecione ao menos um dia"),
+  abertura_hora: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido"),
+  fechamento_hora: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido"),
+  dias_antes_abertura: z.number().int().min(0).max(30),
+});

@@ -51,7 +51,7 @@ export async function auditar(
     p_ator: ator,
     p_acao: acao,
     p_entidade: entidade,
-    p_entidade_id: entidadeId,
+    p_entidade_id: entidadeId as string,
     p_detalhes: { ...detalhes, ip: ipCliente() },
   });
 }

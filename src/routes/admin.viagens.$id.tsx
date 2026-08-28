@@ -55,10 +55,23 @@ function PaginaLista() {
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Link>
         </Button>
+        <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={async () => {
+            if (!data) return;
+            const { exportarCsvViagem } = await import("@/lib/pdf");
+            exportarCsvViagem(data);
+          }}
+          disabled={!data}
+        >
+          <Download className="h-4 w-4" /> Exportar CSV
+        </Button>
         <Button onClick={exportar} disabled={!data || gerando}>
           {gerando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           Exportar PDF
         </Button>
+        </div>
       </div>
 
       {isPending ? (
