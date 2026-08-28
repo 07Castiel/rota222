@@ -5,6 +5,9 @@ import {
   esquemaAtivo,
   esquemaBusca,
   esquemaCpf,
+  esquemaLoteViagens,
+  esquemaOnibus,
+  esquemaOnibusAtivo,
   esquemaReserva,
   esquemaSenhaAdmin,
   esquemaStatusViagem,
@@ -124,3 +127,35 @@ export const painelViagemFn = createServerFn({ method: "GET" })
     const { painelViagem } = await import("./transporte.server");
     return painelViagem(data.viagemId);
   });
+
+export const listarOnibusAdminFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { listarOnibusAdmin } = await import("./transporte.server");
+  return listarOnibusAdmin();
+});
+
+export const salvarOnibusFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => esquemaOnibus.parse(d))
+  .handler(async ({ data }) => {
+    const { salvarOnibus } = await import("./transporte.server");
+    return salvarOnibus(data);
+  });
+
+export const alternarOnibusAtivoFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => esquemaOnibusAtivo.parse(d))
+  .handler(async ({ data }) => {
+    const { alternarOnibusAtivo } = await import("./transporte.server");
+    await alternarOnibusAtivo(data.id, data.ativo);
+    return { ok: true };
+  });
+
+export const criarViagensEmLoteFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => esquemaLoteViagens.parse(d))
+  .handler(async ({ data }) => {
+    const { criarViagensEmLote } = await import("./transporte.server");
+    return criarViagensEmLote(data);
+  });
+
+export const resumoAdminFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { resumoAdmin } = await import("./transporte.server");
+  return resumoAdmin();
+});
