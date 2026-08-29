@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Eye, Loader2, Pencil, Plus, Search } from "lucide-react";
+import { Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminShell } from "@/components/AdminShell";
@@ -26,8 +26,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   alternarAtivoFn,
   detalhesAlunoFn,
+  excluirAlunoFn,
   listarAlunosFn,
   salvarAlunoFn,
 } from "@/lib/transporte.functions";
@@ -76,11 +87,13 @@ function PaginaAlunos() {
   const salvar = useServerFn(salvarAlunoFn);
   const alternar = useServerFn(alternarAtivoFn);
   const detalhar = useServerFn(detalhesAlunoFn);
+  const remover = useServerFn(excluirAlunoFn);
 
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState<Status>("todos");
   const [aberto, setAberto] = useState(false);
   const [verId, setVerId] = useState<string | null>(null);
+  const [excluirAlvo, setExcluirAlvo] = useState<Aluno | null>(null);
   const [editandoId, setEditandoId] = useState<string | undefined>(undefined);
   const [form, setForm] = useState({ ...VAZIO });
 
@@ -121,6 +134,17 @@ function PaginaAlunos() {
       toast.success(v.ativo ? "Aluno reativado." : "Aluno inativado. O histórico foi preservado.");
       await queryClient.invalidateQueries({ queryKey: ["alunos"] });
       await queryClient.invalidateQueries({ queryKey: ["aluno-detalhe"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const excluir = useMutation({
+    mutationFn: (id: string) => remover({ data: { id } }),
+    onSuccess: async () => {
+      toast.success("Aluno excluído.");
+      setExcluirAlvo(null);
+      setVerId(null);
+      await queryClient.invalidateQueries({ queryKey: ["alunos"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -216,6 +240,15 @@ function PaginaAlunos() {
                   <Button variant="ghost" size="sm" aria-label="Editar aluno" onClick={() => abrirEdicao(a)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Excluir aluno"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setExcluirAlvo(a)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </li>
             ))}
@@ -243,6 +276,22 @@ function PaginaAlunos() {
                 <Campo rotulo="Curso" valor={detalhe.aluno.curso} />
                 <Campo rotulo="Instituição" valor={detalhe.aluno.instituicao} />
                 <Campo rotulo="Status" valor={detalhe.aluno.ativo ? "Ativo" : "Inativo"} />
+                <Campo
+                  rotulo="Nascimento"
+                  valor={detalhe.aluno.nascimento ? dataCurta(detalhe.aluno.nascimento) : "—"}
+                />
+                <Campo rotulo="RG" valor={detalhe.aluno.rg ?? "—"} />
+                <Campo rotulo="Telefone" valor={detalhe.aluno.telefone ?? "—"} />
+                <Campo rotulo="E-mail" valor={detalhe.aluno.email ?? "—"} />
+                <Campo rotulo="Endereço" valor={detalhe.aluno.endereco ?? "—"} />
+                <Campo
+                  rotulo="Dias de aula"
+                  valor={detalhe.aluno.dias_semana.length ? detalhe.aluno.dias_semana.join(", ") : "—"}
+                />
+                <Campo
+                  rotulo="Início das aulas"
+                  valor={detalhe.aluno.inicio_aulas ? dataCurta(detalhe.aluno.inicio_aulas) : "—"}
+                />
               </dl>
 
               <div>
@@ -450,6 +499,29 @@ function PaginaAlunos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={excluirAlvo !== null} onOpenChange={(o) => !o && setExcluirAlvo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir aluno</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cadastro de {excluirAlvo?.nome} será removido definitivamente. Alunos com histórico de
+              solicitações não podem ser excluídos — nesse caso, use a inativação.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={excluir.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluirAlvo) excluir.mutate(excluirAlvo.id);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminShell>
   );
 }

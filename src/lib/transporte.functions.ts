@@ -159,3 +159,11 @@ export const resumoAdminFn = createServerFn({ method: "GET" }).handler(async () 
   const { resumoAdmin } = await import("./transporte.server");
   return resumoAdmin();
 });
+
+export const excluirAlunoFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => esquemaAlunoId.parse(d))
+  .handler(async ({ data }) => {
+    const { excluirAluno } = await import("./transporte.server");
+    await excluirAluno(data.id);
+    return { ok: true };
+  });
