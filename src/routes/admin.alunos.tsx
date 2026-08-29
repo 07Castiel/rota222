@@ -92,6 +92,7 @@ function PaginaAlunos() {
   const [status, setStatus] = useState<Status>("todos");
   const [aberto, setAberto] = useState(false);
   const [verId, setVerId] = useState<string | null>(null);
+  const [excluirAlvo, setExcluirAlvo] = useState<Aluno | null>(null);
   const [editandoId, setEditandoId] = useState<string | undefined>(undefined);
   const [form, setForm] = useState({ ...VAZIO });
 
