@@ -499,6 +499,29 @@ function PaginaAlunos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={excluirAlvo !== null} onOpenChange={(o) => !o && setExcluirAlvo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir aluno</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cadastro de {excluirAlvo?.nome} será removido definitivamente. Alunos com histórico de
+              solicitações não podem ser excluídos — nesse caso, use a inativação.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={excluir.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluirAlvo) excluir.mutate(excluirAlvo.id);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminShell>
   );
 }
