@@ -276,6 +276,22 @@ function PaginaAlunos() {
                 <Campo rotulo="Curso" valor={detalhe.aluno.curso} />
                 <Campo rotulo="Instituição" valor={detalhe.aluno.instituicao} />
                 <Campo rotulo="Status" valor={detalhe.aluno.ativo ? "Ativo" : "Inativo"} />
+                <Campo
+                  rotulo="Nascimento"
+                  valor={detalhe.aluno.nascimento ? dataCurta(detalhe.aluno.nascimento) : "—"}
+                />
+                <Campo rotulo="RG" valor={detalhe.aluno.rg ?? "—"} />
+                <Campo rotulo="Telefone" valor={detalhe.aluno.telefone ?? "—"} />
+                <Campo rotulo="E-mail" valor={detalhe.aluno.email ?? "—"} />
+                <Campo rotulo="Endereço" valor={detalhe.aluno.endereco ?? "—"} />
+                <Campo
+                  rotulo="Dias de aula"
+                  valor={detalhe.aluno.dias_semana.length ? detalhe.aluno.dias_semana.join(", ") : "—"}
+                />
+                <Campo
+                  rotulo="Início das aulas"
+                  valor={detalhe.aluno.inicio_aulas ? dataCurta(detalhe.aluno.inicio_aulas) : "—"}
+                />
               </dl>
 
               <div>
