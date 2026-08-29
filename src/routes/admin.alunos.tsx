@@ -138,6 +138,17 @@ function PaginaAlunos() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const excluir = useMutation({
+    mutationFn: (id: string) => remover({ data: { id } }),
+    onSuccess: async () => {
+      toast.success("Aluno excluído.");
+      setExcluirAlvo(null);
+      setVerId(null);
+      await queryClient.invalidateQueries({ queryKey: ["alunos"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   function abrirNovo() {
     setEditandoId(undefined);
     setForm({ ...VAZIO });
