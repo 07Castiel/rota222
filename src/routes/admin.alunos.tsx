@@ -87,6 +87,7 @@ function PaginaAlunos() {
   const salvar = useServerFn(salvarAlunoFn);
   const alternar = useServerFn(alternarAtivoFn);
   const detalhar = useServerFn(detalhesAlunoFn);
+  const remover = useServerFn(excluirAlunoFn);
 
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState<Status>("todos");
