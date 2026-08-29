@@ -240,6 +240,15 @@ function PaginaAlunos() {
                   <Button variant="ghost" size="sm" aria-label="Editar aluno" onClick={() => abrirEdicao(a)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Excluir aluno"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setExcluirAlvo(a)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </li>
             ))}
