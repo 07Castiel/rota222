@@ -26,8 +26,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   alternarAtivoFn,
   detalhesAlunoFn,
+  excluirAlunoFn,
   listarAlunosFn,
   salvarAlunoFn,
 } from "@/lib/transporte.functions";
