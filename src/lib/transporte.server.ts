@@ -448,6 +448,32 @@ export async function alternarAtivo(id: string, ativo: boolean): Promise<void> {
   await auditar("admin", ativo ? "reativou" : "inativou", "aluno", id);
 }
 
+export async function excluirAluno(id: string): Promise<void> {
+  await exigirAdmin();
+  const { data: aluno, error: erroAluno } = await supabaseAdmin
+    .from("alunos")
+    .select("id, nome")
+    .eq("id", id)
+    .maybeSingle();
+  if (erroAluno) throw erroAmigavel(erroAluno);
+  if (!aluno) throw new Error("Aluno não encontrado.");
+
+  const { count, error: erroCount } = await supabaseAdmin
+    .from("solicitacoes")
+    .select("id", { count: "exact", head: true })
+    .eq("aluno_id", id);
+  if (erroCount) throw erroAmigavel(erroCount);
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      "Este aluno possui histórico de solicitações e não pode ser excluído. Inative o cadastro para preservar o histórico.",
+    );
+  }
+
+  const { error } = await supabaseAdmin.from("alunos").delete().eq("id", id);
+  if (error) throw erroAmigavel(error);
+  await auditar("admin", "excluiu", "aluno", id, { nome: aluno.nome });
+}
+
 export async function listarViagens(): Promise<Viagem[]> {
   await exigirAdmin();
   await encerrarPassadas();
